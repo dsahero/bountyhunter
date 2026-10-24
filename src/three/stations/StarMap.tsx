@@ -17,7 +17,14 @@ import type { Charge } from '../../content/schema';
 import { makeHoloMaterial, useHoloFade, HOLO_BLUE } from '../holo/holoMaterial';
 import { makeTextSprite } from '../holo/textSprite';
 import { seeded } from '../procedural/textures';
-import { HoloArrow, Projector, useClickable, useFocusScale, useIsActive } from './common';
+import {
+  HoloArrow,
+  Projector,
+  useClickable,
+  useFocusScale,
+  useIsActive,
+  useOverheadShown,
+} from './common';
 import { lore } from '../../content/lore';
 import { chronological, timelineLocal, TIMELINE } from '../../hub/timeline';
 import { orgLabel } from '../../content/derived';
@@ -218,6 +225,8 @@ function Backdrop({ count, active }: { count: number; active: boolean }) {
 export function StarMap({ tier }: { tier: Tier }) {
   // Off by default: the overhead projector only shows the map for Experience.
   const active = useIsActive('experience');
+  // Stays up after the panel closes, until Holo off or the leadership hologram replaces it.
+  const shown = useOverheadShown('experience');
   const isFirst = useHub((s) => s.charge === chronological()[0]?.id);
   const toEducation = useMemo(() => () => useHub.getState().open('education'), []);
   const selectedId = useHub((s) => s.charge);
@@ -230,7 +239,7 @@ export function StarMap({ tier }: { tier: Tier }) {
 
   const [x, y, z] = ANCHORS.experience;
   return (
-    <group visible={active}>
+    <group visible={shown}>
       {/* Emitter in the ceiling, beaming down onto the map */}
       <Projector position={[x, 2.05, z + 0.05]} height={0.34} radius={0.24} active={active} flip />
       {/* Tilted to face the pilot's seat */}

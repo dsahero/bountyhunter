@@ -58,3 +58,22 @@ describe('holo off', () => {
     expect(useHub.getState().recenter()).toBe(false);
   });
 });
+
+describe('overhead hologram', () => {
+  it('stays up after closing, until another replaces it or Holo off', () => {
+    const hub = useHub.getState();
+    hub.open('experience');
+    hub.close();
+    expect(useHub.getState().overhead).toBe('experience');
+    useHub.getState().open('skills'); // not an overhead hologram: no change
+    expect(useHub.getState().overhead).toBe('experience');
+    useHub.getState().open('leadership');
+    expect(useHub.getState().overhead).toBe('leadership');
+    useHub.getState().close();
+    useHub.getState().holoShutdown(); // off
+    expect(useHub.getState().holosOff).toBe(true);
+    useHub.getState().holoShutdown(); // pressing it again turns them back on
+    expect(useHub.getState().holosOff).toBe(false);
+    expect(useHub.getState().overhead).toBe('leadership');
+  });
+});

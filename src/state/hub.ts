@@ -60,6 +60,12 @@ interface HubState {
   /** Holo off / on: every hologram in the cockpit powers down (or back up). */
   holoShutdown: () => void;
   holosOff: boolean;
+  /**
+   * What the overhead projector shows: the last overhead hologram you opened
+   * (star map or leadership). It stays up after you close the panel, until
+   * Holo off or you open the other one.
+   */
+  overhead: 'experience' | 'leadership' | null;
   /** Turn the head back onto whatever is selected (after a drag or zoom). Returns true if it moved. */
   recenter: () => boolean;
   set: (
@@ -222,6 +228,7 @@ export const useHub = create<HubState>((set, get) => {
     if (get().inspect) set({ inspect: null });
     // Opening a hologram station powers the holograms back up.
     if (v.station && get().holosOff) set({ holosOff: false });
+    if (v.station === 'experience' || v.station === 'leadership') set({ overhead: v.station });
     set({ station: v.station, charge: v.charge, project: v.project });
     const { yaw, pitch } = v.station ? lookForStation(v.station) : consoleLook();
     turnTo(yaw, pitch, booting && !!v.station);
@@ -279,6 +286,7 @@ export const useHub = create<HubState>((set, get) => {
       if (wasCat) cue('holoOff', portfolio.site.captions.hangUp);
     },
     holosOff: false,
+    overhead: null,
     holoShutdown: () => {
       const hub = get();
       if (hub.holosOff) {

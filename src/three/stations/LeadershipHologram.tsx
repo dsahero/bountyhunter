@@ -24,7 +24,7 @@ import {
   screenFinish,
   type Region,
 } from '../ui/canvasKit';
-import { Projector, useIsActive } from './common';
+import { Projector, useOverheadShown } from './common';
 
 const W = 760;
 const H = 560;
@@ -44,7 +44,8 @@ function planet(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, 
 }
 
 export function LeadershipHologram() {
-  const active = useIsActive('leadership');
+  // Stays up after the panel closes, until Holo off or the star map replaces it.
+  const active = useOverheadShown('leadership');
   const page = useLeadershipPage((s) => s.page);
   const focus = useLeadershipPage((s) => s.focus);
   const [x, y, z] = ANCHORS.leadership;

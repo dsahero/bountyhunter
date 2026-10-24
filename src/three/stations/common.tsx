@@ -7,6 +7,7 @@ import { selectionContext } from '@react-three/postprocessing';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHub } from '../../state/hub';
+import { useAttack } from '../../hub/attack';
 import { useExperience } from '../../state/experience';
 import type { StationId } from '../../hub/layout';
 import { HOLO_BLUE } from '../holo/holoMaterial';
@@ -52,6 +53,17 @@ export function useStationClick(id: StationId) {
 /** True while this station is the one being looked at. */
 export function useIsActive(id: StationId) {
   return useHub((s) => s.station === id);
+}
+
+/**
+ * Whether an overhead hologram is up: it's the projector's current one, and
+ * nothing is borrowing the projector (a holocall with the cat, or the
+ * distress call during the attack).
+ */
+export function useOverheadShown(id: 'experience' | 'leadership') {
+  const mine = useHub((s) => s.overhead === id && !(s.call?.kind === 'cat' && s.call.connected));
+  const borrowed = useAttack((s) => s.stage === 'incoming' || s.stage === 'alert');
+  return mine && !borrowed;
 }
 
 const beamVertex = /* glsl */ `
