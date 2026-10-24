@@ -1,16 +1,19 @@
 /**
  * About station: a hologram of the target, projected above the main
- * computer: a slowly turning head-and-shoulders figure inside a targeting
- * reticle, with WANTED and the reward floating above.
+ * computer: a slowly turning head-and-shoulders figure (or your 3D scan, if
+ * identity.scanModel is set), glitchy and blue, inside a targeting reticle,
+ * with WANTED and the reward floating above.
  */
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ANCHORS } from '../../hub/layout';
 import { portfolio } from '../../content/portfolio';
+import { lore } from '../../content/lore';
 import { makeHoloMaterial, useHoloFade, HOLO_BLUE } from '../holo/holoMaterial';
 import { makeTextSprite } from '../holo/textSprite';
 import { Projector, useFocusScale, useIsActive, useStationClick } from './common';
+import { TargetBust } from './TargetBust';
 
 export function WantedHologram() {
   const active = useIsActive('about');
@@ -22,14 +25,14 @@ export function WantedHologram() {
   const [x, y, z] = ANCHORS.about;
 
   const mats = useMemo(
-    () => [makeHoloMaterial(HOLO_BLUE, 0.4), makeHoloMaterial('#ff6a4d', 0.4)],
+    () => [makeHoloMaterial(HOLO_BLUE, 0.4, 1), makeHoloMaterial('#ff6a4d', 0.4)],
     [],
   );
   useHoloFade(mats, active ? 1 : 0.4);
   const labels = useMemo(() => {
-    const title = makeTextSprite('WANTED', { color: '#ff8a70', height: 0.05 });
+    const title = makeTextSprite(lore.holograms.wanted, { color: '#ff8a70', height: 0.05 });
     const reward = makeTextSprite(
-      `${portfolio.identity.reward.amount.toLocaleString('en-US')} CR`,
+      `${portfolio.identity.reward.amount.toLocaleString('en-US')} ${lore.holograms.currency}`,
       {
         color: '#bff0ff',
         height: 0.028,
@@ -56,15 +59,7 @@ export function WantedHologram() {
       <group position={[x, y, z]} {...click}>
         <group ref={grow}>
           <group ref={spin} scale={0.16} position={[0, -0.1, 0]}>
-            <mesh position={[0, 0.05, 0]} scale={[1.2, 0.42, 0.6]} material={blue}>
-              <sphereGeometry args={[0.5, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-            </mesh>
-            <mesh position={[0, 0.3, 0]} material={blue}>
-              <cylinderGeometry args={[0.11, 0.14, 0.2, 14]} />
-            </mesh>
-            <mesh position={[0, 0.66, 0]} scale={[0.9, 1.12, 0.95]} material={blue}>
-              <sphereGeometry args={[0.3, 24, 18]} />
-            </mesh>
+            <TargetBust material={blue} />
           </group>
           {/* Targeting reticle */}
           <group ref={reticle} position={[0, 0, 0.02]}>

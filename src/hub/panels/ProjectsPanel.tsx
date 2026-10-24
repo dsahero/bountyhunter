@@ -1,8 +1,11 @@
 import { portfolio } from '../../content/portfolio';
-import { useHub } from '../../state/hub';
+import { lore } from '../../content/lore';
+import { posterOrder, useHub } from '../../state/hub';
+import { useUnlocks } from '../../state/unlocks';
 import type { Propaganda } from '../../content/schema';
 
-function Transmission({ p }: { p: Propaganda }) {
+function Transmission({ p, locked }: { p: Propaganda; locked: boolean }) {
+  const l = lore.labels;
   const toSkill = (skill: string) => {
     const a = portfolio.associates.find((x) => x.skill === skill);
     if (!a) return;
@@ -10,30 +13,29 @@ function Transmission({ p }: { p: Propaganda }) {
     useHub.getState().open('skills');
   };
 
-  if (p.classified) {
+  if (locked) {
     return (
       <article className="transmission transmission--locked">
-        <p className="transmission__tag">Intercepted transmission · Encrypted</p>
-        <h3 className="charge__title">█████ ███████</h3>
-        <p>
-          This transmission is encrypted. Rumor says the decryption key is a riff played on the
-          cargo-hold guitar.
-        </p>
+        <p className="transmission__tag">{l.encrypted}</p>
+        <h3 className="charge__title">{l.encryptedTitle}</h3>
+        <p>{l.encryptedBody}</p>
       </article>
     );
   }
 
   return (
     <article className="transmission">
-      <p className="transmission__tag">Intercepted transmission · Rebel propaganda</p>
+      <p className="transmission__tag">{l.transmission}</p>
       <h3 className="charge__title">{p.title}</h3>
       <p className="transmission__slogan">“{p.slogan}”</p>
       <p className="panel__lead">{p.oneLiner}</p>
       {p.description.map((d) => (
         <p key={d}>{d}</p>
       ))}
-      <p className="panel__flavor">Role: {p.role}</p>
-      <h4 className="panel__sub">Associates involved</h4>
+      <p className="panel__flavor">
+        {l.role}: {p.role}
+      </p>
+      <h4 className="panel__sub">{l.associatesInvolved}</h4>
       <ul className="chips">
         {p.stack.map((s) => (
           <li key={s}>
@@ -45,50 +47,73 @@ function Transmission({ p }: { p: Propaganda }) {
       </ul>
       {p.links.length > 0 && (
         <p className="transmission__links">
-          {p.links.map((l) => (
+          {p.links.map((link) => (
             <a
-              key={l.href}
+              key={link.href}
               className="btn btn--holo"
-              href={l.href}
+              href={link.href}
               target="_blank"
               rel="noreferrer"
             >
-              {l.label} ↗
+              {link.label} ↗
             </a>
           ))}
         </p>
       )}
-      <p className="panel__flavor">Bounty value: {p.bountyValue.toLocaleString('en-US')} credits</p>
+      <p className="panel__flavor">
+        {l.bountyValue}: {p.bountyValue.toLocaleString('en-US')} {l.credits}
+      </p>
     </article>
   );
 }
 
 export function ProjectsPanel() {
   const selected = useHub((s) => s.project);
+  const unlocked = useUnlocks((s) => s.classified);
   const project = portfolio.propaganda.find((p) => p.id === selected);
+  const l = lore.labels;
+  const isLocked = (p: Propaganda) => p.classified && !unlocked;
 
   if (project) {
+    // Step through the posters in wall order (wrapping around); the head turns to each.
+    const order = posterOrder();
+    const i = order.findIndex((p) => p.id === project.id);
+    const prev = order[(i - 1 + order.length) % order.length]!;
+    const next = order[(i + 1) % order.length]!;
+    const name = (p: Propaganda) => (isLocked(p) ? l.classified : p.title);
     return (
       <>
+        <nav className="step-nav" aria-label={lore.sections.projects.real}>
+          <button
+            className="btn btn--ghost"
+            onClick={() => useHub.getState().selectProject(prev.id)}
+          >
+            ◂ {name(prev)}
+          </button>
+          <button
+            className="btn btn--holo"
+            onClick={() => useHub.getState().selectProject(next.id)}
+          >
+            {l.next}: {name(next)} ▸
+          </button>
+        </nav>
         <button className="link-button" onClick={() => useHub.getState().selectProject(null)}>
-          ◂ All posters
+          {l.allPosters}
         </button>
-        <Transmission p={project} />
+        <Transmission p={project} locked={isLocked(project)} />
       </>
     );
   }
 
   return (
     <>
-      <p className="panel__flavor">
-        Propaganda pasted up in the cargo hold. Select a poster to play its transmission.
-      </p>
+      <p className="panel__flavor">{l.postersIntro}</p>
       <ul className="list-buttons">
         {portfolio.propaganda.map((p) => (
           <li key={p.id}>
             <button className="list-button" onClick={() => useHub.getState().selectProject(p.id)}>
-              <strong>{p.classified ? 'CLASSIFIED' : p.title}</strong>
-              <span>{p.classified ? 'Encrypted transmission' : p.oneLiner}</span>
+              <strong>{isLocked(p) ? l.classified : p.title}</strong>
+              <span>{isLocked(p) ? l.encrypted : p.oneLiner}</span>
             </button>
           </li>
         ))}

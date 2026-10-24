@@ -6,6 +6,7 @@
  */
 import * as THREE from 'three';
 import type { Propaganda } from '../../content/schema';
+import { lore } from '../../content/lore';
 
 const W = 512;
 const H = 768;
@@ -113,7 +114,11 @@ export function makePosterTexture(p: Propaganda, locked: boolean): THREE.CanvasT
   ctx.font = '700 40px Orbitron, sans-serif';
   ctx.fillText(locked ? '██████' : p.title.toUpperCase(), W / 2, H - 92);
   ctx.font = '26px "Share Tech Mono", monospace';
-  ctx.fillText(`BOUNTY VALUE ${p.bountyValue.toLocaleString('en-US')} CR`, W / 2, H - 44);
+  ctx.fillText(
+    `${lore.labels.bountyValue.toUpperCase()} ${p.bountyValue.toLocaleString('en-US')} ${lore.holograms.currency}`,
+    W / 2,
+    H - 44,
+  );
 
   // ---------- Classified overlay ----------
   if (locked) {
@@ -127,7 +132,7 @@ export function makePosterTexture(p: Propaganda, locked: boolean): THREE.CanvasT
     ctx.strokeRect(-200, -50, 400, 100);
     ctx.fillStyle = '#e0463a';
     ctx.font = '900 56px Orbitron, sans-serif';
-    ctx.fillText('CLASSIFIED', 0, 20);
+    ctx.fillText(lore.labels.classified, 0, 20);
     ctx.restore();
   }
 

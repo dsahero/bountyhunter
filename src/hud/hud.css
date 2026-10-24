@@ -113,6 +113,91 @@
   padding: 0.35rem 1rem;
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.8);
-  font: 1.35rem var(--font-mono);
+  font: 1.6rem var(--font-mono);
+  max-width: 92vw;
+  text-align: center;
   color: #fff;
+}
+
+/* Contract briefing typed over the arrival shot */
+.contract {
+  position: fixed;
+  left: 50%;
+  bottom: 14vh;
+  z-index: 39;
+  width: min(900px, 90vw);
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 1.4s ease;
+}
+
+.contract--fade {
+  opacity: 0;
+}
+
+.contract__line {
+  margin: 0.25rem 0;
+  font: clamp(1.1rem, 2.4vw, 1.9rem) / 1.35 var(--font-mono);
+  color: var(--holo);
+  text-shadow:
+    0 0 8px rgba(95, 212, 255, 0.8),
+    0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+.contract__cursor {
+  animation: contract-blink 0.9s steps(2, start) infinite;
+}
+
+@keyframes contract-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* Inspect panel: the guitar's notes "load" in, scrolling, until the comm cuts in */
+.inspect__loading {
+  animation: inspect-load 5.5s steps(40, end) both;
+  overflow: hidden;
+  white-space: normal;
+}
+
+@keyframes inspect-load {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(0.6rem);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
+  }
+}
+
+.reduced-motion .inspect__loading {
+  animation: none;
+}
+
+/* Emergency: the whole view slowly darkens and recovers (4 s, smooth: no flashing) */
+.emergency-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 60%, rgba(20, 0, 0, 0.35), rgba(8, 0, 0, 0.85));
+  animation: emergency-breathe 4s ease-in-out infinite;
+}
+
+@keyframes emergency-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.reduced-motion .emergency-dim {
+  animation: none;
+  opacity: 0.8;
 }

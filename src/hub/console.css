@@ -237,3 +237,34 @@
     gap: 6px 10px;
   }
 }
+
+.console__utils {
+  display: flex;
+  gap: 6px;
+}
+
+.console__util {
+  padding: 3px 10px;
+  border: 1px solid var(--holo-dim);
+  border-radius: 4px;
+  background: rgba(95, 212, 255, 0.08);
+  color: var(--holo);
+  font: 12px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.console__contacts ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.console__photo {
+  width: 64px;
+  height: 64px;
+  margin: 4px 0;
+}

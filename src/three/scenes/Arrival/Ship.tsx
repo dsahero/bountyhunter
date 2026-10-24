@@ -191,6 +191,14 @@ export const Ship = forwardRef<
   JSX.IntrinsicElements['group'] & { ventOpen: MutableRefObject<number> }
 >(function Ship({ ventOpen, ...props }, ref) {
   const mats = useMaterials();
+  const bob = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (!bob.current) return;
+    bob.current.position.y = Math.sin(t * 0.9) * 0.07;
+    bob.current.rotation.z = Math.sin(t * 0.6) * 0.025;
+    bob.current.rotation.x = Math.sin(t * 0.75 + 1) * 0.012;
+  });
   const body = useMemo(() => {
     const g = new THREE.LatheGeometry(
       PROFILE.map(([r, z]) => new THREE.Vector2(r, z)),
@@ -202,73 +210,76 @@ export const Ship = forwardRef<
 
   return (
     <group ref={ref} {...props}>
-      {/* Fuselage: slightly flattened so it reads as a fighter, not a tube */}
-      <mesh geometry={body} scale={[1, 0.82, 1]} material={mats.hull} />
-      {/* Trim bands */}
-      <mesh
-        position={[0, 0, -3.6]}
-        rotation-x={Math.PI / 2}
-        scale={[1, 1, 0.82]}
-        material={mats.orange}
-      >
-        <cylinderGeometry args={[0.605, 0.605, 0.14, 40, 1, true]} />
-      </mesh>
-      <mesh
-        position={[0, 0, 0.3]}
-        rotation-x={Math.PI / 2}
-        scale={[1, 1, 0.82]}
-        material={mats.maroon}
-      >
-        <cylinderGeometry args={[0.985, 0.985, 0.3, 40, 1, true]} />
-      </mesh>
-
-      {/* Bubble canopy */}
-      <mesh position={[0, 0.5, -1.9]} scale={[0.62, 0.42, 1.25]} material={mats.glass}>
-        <sphereGeometry args={[1, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2]} />
-      </mesh>
-      <mesh
-        position={[0, 0.5, -1.9]}
-        rotation-x={-Math.PI / 2}
-        scale={[0.64, 1.27, 1]}
-        material={mats.dark}
-      >
-        <ringGeometry args={[0.95, 1.0, 32]} />
-      </mesh>
-
-      {/* Dorsal spine with the maintenance vent */}
-      <RoundedBox
-        args={[0.8, 0.28, 3.2]}
-        radius={0.1}
-        position={[0, 0.72, 1.2]}
-        material={mats.hull}
-      />
-      <group position={VENT.position}>
-        <mesh position={[0, 0.006, 0]} rotation-x={-Math.PI / 2} material={mats.void}>
-          <planeGeometry args={[VENT.size, VENT.size]} />
+      {/* Inner group bobs gently; the outer group is the flight frame the camera follows. */}
+      <group ref={bob}>
+        {/* Fuselage: slightly flattened so it reads as a fighter, not a tube */}
+        <mesh geometry={body} scale={[1, 0.82, 1]} material={mats.hull} />
+        {/* Trim bands */}
+        <mesh
+          position={[0, 0, -3.6]}
+          rotation-x={Math.PI / 2}
+          scale={[1, 1, 0.82]}
+          material={mats.orange}
+        >
+          <cylinderGeometry args={[0.605, 0.605, 0.14, 40, 1, true]} />
         </mesh>
-        <Louvers size={VENT.size} open={ventOpen} material={mats.dark} position={[0, 0.03, 0]} />
+        <mesh
+          position={[0, 0, 0.3]}
+          rotation-x={Math.PI / 2}
+          scale={[1, 1, 0.82]}
+          material={mats.maroon}
+        >
+          <cylinderGeometry args={[0.985, 0.985, 0.3, 40, 1, true]} />
+        </mesh>
+
+        {/* Bubble canopy */}
+        <mesh position={[0, 0.5, -1.9]} scale={[0.62, 0.42, 1.25]} material={mats.glass}>
+          <sphereGeometry args={[1, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        </mesh>
+        <mesh
+          position={[0, 0.5, -1.9]}
+          rotation-x={-Math.PI / 2}
+          scale={[0.64, 1.27, 1]}
+          material={mats.dark}
+        >
+          <ringGeometry args={[0.95, 1.0, 32]} />
+        </mesh>
+
+        {/* Dorsal spine with the maintenance vent */}
+        <RoundedBox
+          args={[0.8, 0.28, 3.2]}
+          radius={0.1}
+          position={[0, 0.72, 1.2]}
+          material={mats.hull}
+        />
+        <group position={VENT.position}>
+          <mesh position={[0, 0.006, 0]} rotation-x={-Math.PI / 2} material={mats.void}>
+            <planeGeometry args={[VENT.size, VENT.size]} />
+          </mesh>
+          <Louvers size={VENT.size} open={ventOpen} material={mats.dark} position={[0, 0.03, 0]} />
+        </group>
+        <Blinker position={[0, 0.9, 2.7]} color="#ffb020" offset={0.3} />
+
+        {/* Wings + engines, mirrored */}
+        <WingAssembly mats={mats} />
+        <WingAssembly mats={mats} mirrored />
+
+        {/* Belly: keel, panel strips, landing lights */}
+        <mesh position={[0, -0.78, 0.2]} material={mats.dark}>
+          <boxGeometry args={[0.28, 0.12, 4.6]} />
+        </mesh>
+        {[-1.8, -0.6, 0.6, 1.8].map((z) => (
+          <mesh key={z} position={[0, -0.8, z]} material={mats.maroon}>
+            <boxGeometry args={[1.2, 0.02, 0.06]} />
+          </mesh>
+        ))}
+        {[-0.35, 0.35].map((x) => (
+          <mesh key={x} position={[x, -0.76, -2.6]}>
+            <sphereGeometry args={[0.07, 10, 8]} />
+            <meshBasicMaterial color="#ffd9a0" toneMapped={false} />
+          </mesh>
+        ))}
       </group>
-      <Blinker position={[0, 0.9, 2.7]} color="#ffb020" offset={0.3} />
-
-      {/* Wings + engines, mirrored */}
-      <WingAssembly mats={mats} />
-      <WingAssembly mats={mats} mirrored />
-
-      {/* Belly: keel, panel strips, landing lights */}
-      <mesh position={[0, -0.78, 0.2]} material={mats.dark}>
-        <boxGeometry args={[0.28, 0.12, 4.6]} />
-      </mesh>
-      {[-1.8, -0.6, 0.6, 1.8].map((z) => (
-        <mesh key={z} position={[0, -0.8, z]} material={mats.maroon}>
-          <boxGeometry args={[1.2, 0.02, 0.06]} />
-        </mesh>
-      ))}
-      {[-0.35, 0.35].map((x) => (
-        <mesh key={x} position={[x, -0.76, -2.6]}>
-          <sphereGeometry args={[0.07, 10, 8]} />
-          <meshBasicMaterial color="#ffd9a0" toneMapped={false} />
-        </mesh>
-      ))}
     </group>
   );
 });

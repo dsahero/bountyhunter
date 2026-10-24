@@ -13,7 +13,9 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "export:hunter": "node scripts/export-hunter.mjs",
+    "import:hunter": "node scripts/import-hunter.mjs"
   },
   "dependencies": {
     "@fontsource/orbitron": "^5.1.0",

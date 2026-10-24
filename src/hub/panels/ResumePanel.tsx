@@ -17,15 +17,17 @@ export function ResumePanel() {
   const internships = byNewest(chronological());
   const leadership = byNewest(leadershipRoles());
   const units = [...new Set(associates.map((a) => a.unit))];
+  const l = lore.labels;
+  const h = l.resumeSections;
 
   return (
     <article className="resume">
       <div className="resume__actions">
         <a className="btn" href={resume.pdf} download onClick={() => setDownloaded(true)}>
-          Download PDF
+          {l.downloadPdf}
         </a>
         <a className="btn btn--ghost" href="/dossier">
-          Plain-text dossier
+          {l.plainText}
         </a>
         {downloaded && (
           <span className="panel__quip" role="status">
@@ -39,17 +41,17 @@ export function ResumePanel() {
         <p className="resume__contact">
           <a href={`mailto:${contact.email}`}>{contact.email}</a> ·{' '}
           <a href={contact.linkedin} target="_blank" rel="noreferrer">
-            LinkedIn
+            {l.linkedin}
           </a>{' '}
           ·{' '}
           <a href={contact.github} target="_blank" rel="noreferrer">
-            GitHub
+            {l.github}
           </a>
         </p>
       </header>
 
       <section>
-        <h4 className="resume__section">Education</h4>
+        <h4 className="resume__section">{h.education}</h4>
         <div className="resume__row">
           <strong>{e.school}</strong>
           <span>
@@ -57,16 +59,16 @@ export function ResumePanel() {
           </span>
         </div>
         <p className="resume__sub">
-          {e.degree}, Specialization in {e.specialization}; {e.minor} Minor
+          {e.degree}, {e.specialization}; {e.minor}
         </p>
         <p>
-          GPA {e.gpa}
+          {l.gpa} {e.gpa}
           {e.honors.length > 0 && <> · {e.honors.join(' · ')}</>}
         </p>
       </section>
 
       <section>
-        <h4 className="resume__section">Experience</h4>
+        <h4 className="resume__section">{h.experience}</h4>
         {internships.map((c) => (
           <div key={c.id} className="resume__entry">
             <div className="resume__row">
@@ -88,7 +90,7 @@ export function ResumePanel() {
       </section>
 
       <section>
-        <h4 className="resume__section">Leadership</h4>
+        <h4 className="resume__section">{h.leadership}</h4>
         {leadership.map((c) => (
           <div key={c.id} className="resume__entry">
             <div className="resume__row">
@@ -108,7 +110,7 @@ export function ResumePanel() {
       </section>
 
       <section>
-        <h4 className="resume__section">Projects</h4>
+        <h4 className="resume__section">{h.projects}</h4>
         {propaganda
           .filter((p) => !p.classified)
           .map((p) => (
@@ -124,7 +126,7 @@ export function ResumePanel() {
       </section>
 
       <section>
-        <h4 className="resume__section">Technical skills</h4>
+        <h4 className="resume__section">{h.skills}</h4>
         <dl className="resume__skills">
           {units.map((u) => (
             <div key={u}>
@@ -139,7 +141,9 @@ export function ResumePanel() {
           ))}
         </dl>
       </section>
-      <p className="panel__flavor">Updated {resume.updated}.</p>
+      <p className="panel__flavor">
+        {l.updated} {resume.updated}.
+      </p>
     </article>
   );
 }

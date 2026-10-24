@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { audio } from './engine';
 import { useSettings } from '../state/settings';
 import { useExperience } from '../state/experience';
+import { portfolio } from '../content/portfolio';
+import { useAttack, isEmergency } from '../hub/attack';
+import { useCockpitMusic } from './useCockpitMusic';
 
 /**
  * Keeps the audio engine in step with settings and the experience:
@@ -18,10 +21,26 @@ export function useAudioSync() {
     audio.setVolume(volume);
   }, [enabled, volume]);
 
+  // Music: the crawl theme starts after the title card; "Continue" fades it
+  // into the journey theme for the arrival. Aboard, music plays in idle-
+  // triggered sets (useCockpitMusic). Your files in portfolio.site.audio
+  // replace the placeholder synth.
   useEffect(() => {
-    if (phase === 'hub') audio.startAmbience();
-    else if (phase === 'gate' || phase === 'title') audio.stopAmbience();
+    const files = portfolio.site.audio;
+    if (phase === 'crawl') audio.music('crawl', files.crawl);
+    else if (phase === 'arrival') audio.music('journey', files.arrival);
+    else if (phase === 'hub') audio.startAmbience();
+    else {
+      audio.music(null);
+      audio.stopAmbience();
+    }
   }, [phase]);
+  useCockpitMusic(phase === 'hub');
+
+  const stage = useAttack((s) => s.stage);
+  useEffect(() => {
+    audio.loop('alarm', isEmergency(stage) ? portfolio.site.audio.alarm : null);
+  }, [stage]);
 
   useEffect(() => {
     const onGesture = (e: Event) => {

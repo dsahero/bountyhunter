@@ -40,3 +40,14 @@ export const useSettings = create<SettingsState>((set, get) => ({
     writeJSON('settings', { skipIntro, soundEnabled, volume, reducedMotion } satisfies Persisted);
   },
 }));
+
+// Reflect the (manual) reduced-motion choice as a class on <html>, so CSS can tone animations down.
+if (typeof document !== 'undefined') {
+  const apply = () =>
+    document.documentElement.classList.toggle(
+      'reduced-motion',
+      useSettings.getState().reducedMotion === 'on',
+    );
+  apply();
+  useSettings.subscribe(apply);
+}

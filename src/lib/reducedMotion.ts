@@ -20,11 +20,9 @@ export function useSystemReducedMotion(): boolean {
 }
 
 /**
- * True when motion should be minimized. The in-app setting wins over the
- * OS setting, so a user can opt in or out either way.
+ * True when motion should be minimized. This is a manual choice (start screen
+ * or HUD); full motion is the default regardless of the OS setting.
  */
 export function useReducedMotion(): boolean {
-  const system = useSyncExternalStore(subscribe, getSystemPreference, () => false);
-  const setting = useSettings((s) => s.reducedMotion);
-  return setting === 'system' ? system : setting === 'on';
+  return useSettings((s) => s.reducedMotion === 'on');
 }

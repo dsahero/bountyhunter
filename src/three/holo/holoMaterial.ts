@@ -15,11 +15,22 @@ export const HOLO_BLUE = '#5fd4ff';
 const holoTime = { value: 0 };
 
 const vertexShader = /* glsl */ `
+  uniform float uTime;
+  uniform float uJitter;
   varying vec3 vNormal;
   varying vec3 vView;
   varying vec3 vWorld;
+  float hash(float n) { return fract(sin(n) * 43758.5453); }
   void main() {
     vec4 world = modelMatrix * vec4(position, 1.0);
+    // Glitch: now and then, thin horizontal slices of the hologram slip sideways.
+    if (uJitter > 0.0) {
+      float slice = floor(world.y * 60.0);
+      float tick = floor(uTime * 12.0);
+      float glitch = step(0.93, hash(slice + tick * 17.0));
+      world.x += (hash(slice * 3.1 + tick) - 0.5) * 0.04 * uJitter * glitch;
+      world.xyz += normalize((modelMatrix * vec4(normal, 0.0)).xyz) * sin(uTime * 50.0 + world.y * 90.0) * 0.0015 * uJitter;
+    }
     vec4 mv = viewMatrix * world;
     vWorld = world.xyz;
     vNormal = normalize(normalMatrix * normal);
@@ -46,7 +57,12 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-export function makeHoloMaterial(color: THREE.ColorRepresentation = HOLO_BLUE, opacity = 1) {
+/** `jitter` > 0 adds glitchy slice displacement and shimmer (for the target's hologram). */
+export function makeHoloMaterial(
+  color: THREE.ColorRepresentation = HOLO_BLUE,
+  opacity = 1,
+  jitter = 0,
+) {
   return new THREE.ShaderMaterial({
     vertexShader,
     fragmentShader,
@@ -54,6 +70,7 @@ export function makeHoloMaterial(color: THREE.ColorRepresentation = HOLO_BLUE, o
       uColor: { value: new THREE.Color(color) },
       uOpacity: { value: opacity },
       uTime: holoTime,
+      uJitter: { value: jitter },
     },
     transparent: true,
     depthWrite: false,

@@ -1,20 +1,24 @@
 /**
- * Shared pieces for the cockpit stations: click handling for 3D objects
- * and the holo-projector emitter (a glowing disc plus a faint light cone).
+ * Shared pieces for the cockpit stations: click handling (with a hover
+ * outline) for 3D objects and the holo-projector emitter (a glowing disc plus a faint light cone).
  */
-import { useMemo, useRef } from 'react';
+import { useContext, useMemo, useRef } from 'react';
+import { selectionContext } from '@react-three/postprocessing';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHub } from '../../state/hub';
 import { useExperience } from '../../state/experience';
 import type { StationId } from '../../hub/layout';
 import { HOLO_BLUE } from '../holo/holoMaterial';
+import { makeTextSprite } from '../holo/textSprite';
 
 /**
  * Pointer handlers that open a station (or run `onSelect`) when a 3D object
  * is clicked. Ignores clicks that were really the end of a drag-to-look.
  */
 export function useClickable(onSelect: () => void) {
+  // Hovering a clickable thing outlines it (see Effects: Outline reads this selection).
+  const selection = useContext(selectionContext);
   return useMemo(
     () => ({
       onClick: (e: ThreeEvent<MouseEvent>) => {
@@ -25,12 +29,19 @@ export function useClickable(onSelect: () => void) {
       onPointerOver: (e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
         document.body.style.cursor = 'pointer';
+        if (!selection) return;
+        const meshes: THREE.Object3D[] = [];
+        e.eventObject.traverse((o) => {
+          if ((o as THREE.Mesh).isMesh && o.visible) meshes.push(o);
+        });
+        selection.select(meshes);
       },
       onPointerOut: () => {
         document.body.style.cursor = '';
+        selection?.select([]);
       },
     }),
-    [onSelect],
+    [onSelect, selection],
   );
 }
 
@@ -126,4 +137,49 @@ export function useFocusScale(
     if (!g) return;
     g.scale.setScalar(THREE.MathUtils.damp(g.scale.x, active ? factor : 1, 3, dt));
   });
+}
+
+/**
+ * A clickable holo arrow with a label, for stepping between linked stations
+ * (education -> first experience, and back). Points +X by default; `dir`
+ * -1 points -X. Only shown (and clickable) when `visible`.
+ */
+export function HoloArrow({
+  label,
+  dir = 1,
+  visible,
+  onSelect,
+  ...props
+}: {
+  label: string;
+  dir?: 1 | -1;
+  visible: boolean;
+  onSelect: () => void;
+} & JSX.IntrinsicElements['group']) {
+  const click = useClickable(onSelect);
+  const sprite = useMemo(() => makeTextSprite(label, { height: 0.016, color: '#ffd9a0' }), [label]);
+  const mat = useMemo(
+    () => new THREE.MeshBasicMaterial({ color: '#ffb347', transparent: true, opacity: 0.85, toneMapped: false }),
+    [],
+  );
+  const cone = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => {
+    if (cone.current) cone.current.position.x = dir * (0.02 + Math.sin(clock.elapsedTime * 3) * 0.006);
+  });
+  return (
+    <group {...props} visible={visible}>
+      {visible && (
+        <group {...click}>
+          <mesh ref={cone} rotation-z={-dir * (Math.PI / 2)} material={mat}>
+            <coneGeometry args={[0.018, 0.04, 3]} />
+          </mesh>
+          {/* Generous invisible hit area */}
+          <mesh visible={false}>
+            <boxGeometry args={[0.12, 0.08, 0.02]} />
+          </mesh>
+          <primitive object={sprite} position={[dir * -0.02, -0.035, 0]} />
+        </group>
+      )}
+    </group>
+  );
 }

@@ -1,19 +1,22 @@
 import { portfolio } from '../../content/portfolio';
-import { useHub, type Unit } from '../../state/hub';
+import { lore } from '../../content/lore';
+import { useHub } from '../../state/hub';
 
-const UNITS = [...new Set(portfolio.associates.map((a) => a.unit))] as Unit[];
-const LEVELS = ['', 'Acquaintance', 'Contact', 'Ally', 'Trusted ally', 'Right hand'];
+/** Units are whatever groups the associates in the content file use, in order of appearance. */
+const UNITS = [...new Set(portfolio.associates.map((a) => a.unit))];
 
 export function SkillsPanel() {
   const unit = useHub((s) => s.unit);
   const skill = useHub((s) => s.associate);
+  const l = lore.labels;
   const members = portfolio.associates.filter((a) => a.unit === unit);
-  const a = members.find((m) => m.skill === skill) ?? members[0]!;
+  const a = members.find((m) => m.skill === skill) ?? members[0];
+  if (!a) return null;
   const ops = portfolio.propaganda.filter((p) => !p.classified && p.stack.includes(a.skill));
 
   return (
     <>
-      <div className="tabs" role="group" aria-label="Units">
+      <div className="tabs" role="group" aria-label={lore.sections.skills.real}>
         {UNITS.map((u) => (
           <button
             key={u}
@@ -29,7 +32,7 @@ export function SkillsPanel() {
         ))}
       </div>
 
-      <ul className="roster" aria-label={`${unit} roster`}>
+      <ul className="roster" aria-label={unit}>
         {members.map((m) => (
           <li key={m.skill}>
             <button
@@ -50,11 +53,14 @@ export function SkillsPanel() {
         </p>
         <h3 className="charge__title">{a.callsign}</h3>
         <p className="panel__lead">
-          Skill: <strong>{a.skill}</strong>
+          <strong>{a.skill}</strong>
         </p>
         <p>{a.note}</p>
-        <div className="meter" aria-label={`Association level ${a.level} of 5: ${LEVELS[a.level]}`}>
-          <span className="meter__label">Association</span>
+        <div
+          className="meter"
+          aria-label={`${l.association} ${a.level} / 5: ${l.associationLevels[a.level]}`}
+        >
+          <span className="meter__label">{l.association}</span>
           {[1, 2, 3, 4, 5].map((n) => (
             <span
               key={n}
@@ -62,23 +68,16 @@ export function SkillsPanel() {
               aria-hidden="true"
             />
           ))}
-          <span className="panel__flavor">{LEVELS[a.level]}</span>
+          <span className="panel__flavor">{l.associationLevels[a.level]}</span>
         </div>
-        <p className="panel__flavor">
-          Served with the target for {a.years} {a.years === 1 ? 'year' : 'years'}.
-        </p>
+        <p className="panel__flavor">{l.servedWith.replace('{YEARS}', String(a.years))}</p>
         {ops.length > 0 && (
           <>
-            <h4 className="panel__sub">Joint operations</h4>
+            <h4 className="panel__sub">{l.jointOperations}</h4>
             <ul className="chips">
               {ops.map((p) => (
                 <li key={p.id}>
-                  <button
-                    className="chip"
-                    onClick={() => {
-                      useHub.getState().selectProject(p.id);
-                    }}
-                  >
+                  <button className="chip" onClick={() => useHub.getState().selectProject(p.id)}>
                     {p.title}
                   </button>
                 </li>

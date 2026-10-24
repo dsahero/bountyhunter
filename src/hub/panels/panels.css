@@ -37,10 +37,8 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .panel {
-    animation: none;
-  }
+.reduced-motion .panel {
+  animation: none;
 }
 
 .panel__header {
@@ -560,12 +558,10 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cryo,
-  .cryo::after,
-  .cryo__name {
-    animation-duration: 0.01s;
-  }
+.reduced-motion .cryo,
+.reduced-motion .cryo::after,
+.reduced-motion .cryo__name {
+  animation-duration: 0.01s;
 }
 
 /* Back / Next through the timeline */
@@ -573,9 +569,9 @@
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
-  margin-top: 1.4rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid rgba(95, 212, 255, 0.25);
+  margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(95, 212, 255, 0.25);
 }
 
 /* Back + Console, side by side at the top of every panel */
@@ -665,4 +661,30 @@
 
 .resume__skills dd {
   margin: 0;
+}
+
+/* Photo slot on the wanted poster (grey square until identity.portrait is set) */
+.portrait-slot {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #9a9a9a;
+  border: 2px solid #5a4630;
+}
+
+.portrait-slot svg {
+  width: 70%;
+  fill: #6f6f6f;
+}
+
+.portrait-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wanted__photo {
+  width: 110px;
+  height: 110px;
+  margin: 0.4rem auto;
 }

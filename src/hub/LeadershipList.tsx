@@ -1,15 +1,18 @@
 /**
- * Leadership as "rebel cells I've run": each role with the planet it happened
- * on to the left, and the role and description beside/under it.
- *
- * In the 3D cockpit this is projected as a hologram overhead (in place of the
- * star map). In the 2D fallback it renders inside a normal panel.
+ * Leadership: the "rebel cells" I've run, from the content file.
+ *   - In 3D: an overhead canvas hologram (three/stations/LeadershipHologram),
+ *     paged two roles at a time, with a hidden keyboard mirror (below).
+ *   - In 2D: this list renders inside a normal panel.
  */
+import { create } from 'zustand';
+import { useEffect } from 'react';
 import { portfolio } from '../content/portfolio';
 import { lore } from '../content/lore';
 import { useHub } from '../state/hub';
 import { parseMonth } from './timeline';
 import './leadership.css';
+
+export const LEADERSHIP_PER_PAGE = 2;
 
 export function leadershipRoles() {
   return portfolio.charges
@@ -17,26 +20,69 @@ export function leadershipRoles() {
     .sort((a, b) => parseMonth(a.start) - parseMonth(b.start));
 }
 
-export function LeadershipList({ inWorld }: { inWorld: boolean }) {
+const pageCount = () => Math.max(1, Math.ceil(leadershipRoles().length / LEADERSHIP_PER_PAGE));
+
+export const useLeadershipPage = create<{
+  page: number;
+  focus: string | null;
+  set: (p: { page?: number; focus?: string | null }) => void;
+}>((set) => ({ page: 0, focus: null, set: (p) => set(p) }));
+
+export function activateLeadership(id: string) {
+  const { page, set } = useLeadershipPage.getState();
+  if (id === 'back') return useHub.getState().back();
+  if (id === 'console') return useHub.getState().close();
+  if (id === 'prev') return set({ page: (page - 1 + pageCount()) % pageCount() });
+  if (id === 'next') return set({ page: (page + 1) % pageCount() });
+}
+
+/** Hidden real buttons for the leadership hologram (keyboard + screen readers). */
+export function LeadershipMirror() {
+  const set = useLeadershipPage((s) => s.set);
   const roles = leadershipRoles();
+  const items = [
+    { id: 'back', label: lore.panel.back },
+    { id: 'console', label: lore.panel.console },
+    ...(pageCount() > 1
+      ? [
+          { id: 'prev', label: '◂' },
+          { id: 'next', label: '▸' },
+        ]
+      : []),
+  ];
+  useEffect(() => {
+    document.getElementById('leadership-back')?.focus({ preventScroll: true });
+  }, []);
   return (
-    <div className={`leadership${inWorld ? ' leadership--world' : ''}`}>
-      {inWorld && (
-        <header className="leadership__header">
-          <h2 className="leadership__title">{lore.sections.leadership.lore}</h2>
-          <p className="leadership__real">{lore.sections.leadership.real}</p>
-          <nav className="leadership__nav" aria-label="Leadership navigation">
-            <button className="leadership__btn" onClick={() => useHub.getState().back()}>
-              ◂ Back <kbd>⌫</kbd>
-            </button>
-            <button className="leadership__btn" onClick={() => useHub.getState().close()}>
-              Console <kbd>Esc</kbd>
-            </button>
-          </nav>
-        </header>
-      )}
-      <ol className="leadership__list">
+    <nav className="leadership-mirror sr-only" aria-label={lore.sections.leadership.real}>
+      <ul>
         {roles.map((r) => (
+          <li key={r.id}>
+            {r.role}, {r.org}, {r.start} – {r.end}. {r.evidence.join(' ')}
+          </li>
+        ))}
+      </ul>
+      {items.map((b) => (
+        <button
+          key={b.id}
+          id={`leadership-${b.id}`}
+          onFocus={() => set({ focus: b.id })}
+          onBlur={() => set({ focus: null })}
+          onClick={() => activateLeadership(b.id)}
+        >
+          {b.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+/** The 2D (no-WebGL) version, shown in a regular panel. */
+export function LeadershipList() {
+  return (
+    <div className="leadership">
+      <ol className="leadership__list">
+        {leadershipRoles().map((r) => (
           <li key={r.id} className="cell">
             <div className="cell__planet" style={{ ['--planet' as string]: r.planet.color }}>
               <span className="cell__orb" aria-hidden="true" />

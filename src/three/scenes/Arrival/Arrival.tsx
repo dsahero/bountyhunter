@@ -1,64 +1,84 @@
 /**
- * The arrival: one continuous camera move with a single pause.
+ * The arrival: one continuous camera move.
  *
- *   1. HOLD. The crawl ends looking up into the stars and the camera stays
- *      there. The hunter's ship roars in from behind, low overhead, its belly
- *      filling the frame, and keeps flying until it has cleared us. This is
- *      the only time the camera is still.
- *   2. FLY. The camera eases into motion and never stops again: it chases the
- *      ship, rises behind it, glides along the hull, and dives into the
- *      louvered vent on the spine, all on one constant-speed path.
- *   3. In the black of the vent it carries on into the duct above the cockpit.
- *      Lights flicker on, the ceiling grate opens, and it drops into the room.
- *      The hunter lifts off their helmet, sets it on the console, and sits. The
- *      camera slows smoothly into their eyes, and the visitor is the hunter.
+ *   1. The crawl ends looking up into the stars. The camera makes one smooth
+ *      tilt down to the horizon (planet low in frame), and holds.
+ *   2. The hunter's ship roars in from directly behind and overhead, angled
+ *      and banked so its underside fills most of the screen, and flies on
+ *      toward the horizon (never touching the bottom of the frame).
+ *   3. A few seconds after it's clear, the camera eases into motion and never
+ *      stops: it chases the ship, rises behind it, glides along the hull and
+ *      dives into the vent. In the black of the vent it carries on into the
+ *      duct above the cockpit, drops through the ceiling, and comes to rest
+ *      behind the hunter's shoulder.
+ *   4. The hunter leans in, takes the helmet off with both hands, carries it
+ *      to the shelf, and sits. Then the camera eases into their eyes.
  *
- * How "no cuts" works: the flyby happens far from the cockpit set (FLYBY).
- * The sky follows the camera, so it looks the same from both places. The
- * camera crosses between them at the instant the vent's black opening fills
- * the whole frame.
+ * No cuts: the flyby happens far from the cockpit set (FLYBY); the sky follows
+ * the camera, so it looks the same from both. The camera crosses over at the
+ * instant the vent's black opening fills the frame.
  *
- * Camera math: during the flight the camera rides a spline in the *ship's*
- * moving frame (so it keeps pace with it), blended in from the static
- * world-space hold. `makePath` samples by distance, so a linear tween is a
- * constant-speed move.
+ * The camera rides splines sampled by distance (constant speed); during the
+ * flight it rides in the ship's own frame, blended in from the static hold.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { Ship, VENT } from './Ship';
-import { Hunter, HEAD_STANDING, SIT_DROP, type HunterHandle } from './Hunter';
+import { Hunter, type HunterHandle } from './Hunter';
 import { Helmet } from '../Cockpit/Helmet';
 import { cockpitFx } from '../Cockpit/fx';
 import { makePath } from '../../camera/path';
 import { cruise } from '../../sky/motion';
 import { DUCT, EYE, HELMET_ON_SHELF } from '../../../hub/layout';
+import { ARRIVAL, T_DUCT, T_EYES, T_SHOULDER } from '../../../hub/arrivalTiming';
 import { consoleLook } from '../../../state/hub';
 import { useExperience } from '../../../state/experience';
 import { useCinema } from '../../../state/cinema';
 import { useReducedMotion } from '../../../lib/reducedMotion';
 import { cue } from '../../../audio/cues';
 import { audio } from '../../../audio/engine';
+import { lore } from '../../../content/lore';
+
+/** How far the shot had got, so a remount continues instead of restarting. */
+let resumeAt = 0;
+
+// Keep the intro in real time even on slow machines: GSAP normally treats any
+// frame slower than 0.5 s as a 33 ms one (so a 4 fps device would play the
+// shot several times slower). Only truly long stalls (a hidden tab) are capped.
+gsap.ticker.lagSmoothing(1500, 100);
 
 type V = [number, number, number];
 
 /** Where the flyby happens, far from the cockpit set at the origin. */
 const FLYBY = new THREE.Vector3(0, 0, -10000);
-/** The ship's straight-line flight (relative to FLYBY): low overhead, front to back of frame. */
-const SHIP = { y: 3.6, startZ: 34, speed: 9 };
+/** The pass: from behind/above/left of the camera to far ahead/right, down near the horizon. */
+const PASS_FROM = new THREE.Vector3(-4, 5.2, 12);
+const PASS_TO = new THREE.Vector3(7, -10, -170);
+const PASS_VELOCITY = PASS_TO.clone().sub(PASS_FROM).divideScalar(ARRIVAL.shipPass);
+/** Heading from the velocity (the ship flies nose-first), with a bank that levels out before the chase. */
+const HEADING = new THREE.Euler(
+  Math.atan2(PASS_VELOCITY.y, Math.hypot(PASS_VELOCITY.x, PASS_VELOCITY.z)),
+  Math.atan2(-PASS_VELOCITY.x, -PASS_VELOCITY.z),
+  0,
+  'YXZ',
+);
+const BANK = 0.45;
+
+/** Looking up during the crawl, then down to the horizon for the pass. */
+const CRAWL_TARGET = new THREE.Vector3(0, 14, -4);
+const HOLD_TARGET = new THREE.Vector3(0.6, -1.4, -20);
+
 const HUNTER_START = new THREE.Vector3(0.25, 0, -0.12);
 const SEAT = new THREE.Vector3(0, 0, 0.3);
-
-/** Hold: looking up, slightly forward, so the ship crosses the frame overhead. */
-const HOLD_TARGET = new THREE.Vector3(0, 12, -3.5);
-
-/** Timeline beats (seconds). */
-const T = { roar: 2.2, fly: 6.2, blend: 5.5, path: 13.0, room: 8.0 };
-const T_DUCT = T.fly + T.path;
+/** Helmet grip points (helmet-local): the sides of the helmet, a little low. */
+const GRIP_L = new THREE.Vector3(-0.15, -0.04, 0.01);
+const GRIP_R = new THREE.Vector3(0.15, -0.04, 0.01);
 
 function shipAt(t: number, out: THREE.Vector3) {
-  return out.set(0, SHIP.y, SHIP.startZ - SHIP.speed * t);
+  const k = Math.max(0, t - ARRIVAL.shipStart);
+  return out.copy(PASS_FROM).addScaledVector(PASS_VELOCITY, k);
 }
 
 /** The point the camera looks at once it's in the pilot's eyes. */
@@ -102,22 +122,22 @@ export function Arrival({ started }: { started: boolean }) {
       ),
     [vx, vy, vz],
   );
-  // Through the duct, out of the ceiling, over the shoulder, into the eyes.
+  // Down the duct, out of the ceiling, to rest behind the shoulder (knot 3), then into the eyes.
   const room = useMemo(
     () =>
       makePath(
         [
           [DUCT.x, DUCT.roofY + 1.0, DUCT.z],
           [DUCT.x, DUCT.roofY + 0.2, DUCT.z],
-          [0, 1.92, 0.66],
-          [0.4, 1.6, 0.95],
+          [0.1, 1.9, 0.75],
+          [0.5, 1.72, 0.95],
           [...EYE],
         ],
         [
           [DUCT.x, 0, DUCT.z - 0.02],
           [DUCT.x, 0, DUCT.z - 0.05],
           [0.25, 1.35, -0.12],
-          [0.2, 1.05, -0.4],
+          [0.35, 1.2, -0.35],
           consoleTarget(),
         ],
       ),
@@ -126,97 +146,156 @@ export function Arrival({ started }: { started: boolean }) {
 
   const rig = useRef({
     mode: 'flyby' as 'flyby' | 'cockpit',
+    look: { tilt: 0 },
     blend: { value: 0 },
+    bank: { value: BANK },
     flight: { u: 0 },
     room: { u: 0 },
     fov: { value: 55 },
-    helmet: { state: 'worn' as 'worn' | 'held' | 'placed', lift: 0, offset: new THREE.Vector3() },
+    helmet: {
+      state: 'worn' as 'worn' | 'carried' | 'placed',
+      u: 0,
+      path: null as THREE.CatmullRomCurve3 | null,
+      from: new THREE.Quaternion(),
+    },
+    hands: { left: 0, right: 0 },
     shipTimeOverride: null as number | null,
+    /** Next frame, jump straight to the wanted orientation (start, and the hidden cut). */
+    snap: true,
   }).current;
 
   const tmp = useMemo(
     () => ({
       shipPos: new THREE.Vector3(),
-      holdPos: new THREE.Vector3(),
+      shipQuat: new THREE.Quaternion(),
+      euler: new THREE.Euler(0, 0, 0, 'YXZ'),
+      hold: new THREE.Vector3(),
       a: new THREE.Vector3(),
       b: new THREE.Vector3(),
       pos: new THREE.Vector3(),
       tgt: new THREE.Vector3(),
       dir: new THREE.Vector3(),
-      hand: new THREE.Vector3(),
-      head: new THREE.Vector3(),
       up: new THREE.Vector3(0, 1, 0),
       forwardUp: new THREE.Vector3(0, 0, -1),
+      upHint: new THREE.Vector3(),
+      shipUp: new THREE.Vector3(),
+      shipForward: new THREE.Vector3(),
+      look: new THREE.Matrix4(),
+      wantQuat: new THREE.Quaternion(),
+      shelfQuat: new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, HELMET_ON_SHELF.rotationY, 0),
+      ),
+      gripL: new THREE.Vector3(),
+      gripR: new THREE.Vector3(),
     }),
     [],
   );
 
-  // ---------- Per-frame: place ship, camera, and helmet ----------
-  useFrame(() => {
+  // ---------- Per frame: ship, camera, helmet, and the hunter's hands ----------
+  useFrame((_, dt) => {
     const time = rig.shipTimeOverride ?? timeline.current?.time() ?? 0;
+    if (started && timeline.current?.isActive()) resumeAt = timeline.current.time();
     shipAt(time, tmp.shipPos);
-    ship.current?.position.copy(tmp.shipPos);
+    tmp.euler.set(HEADING.x, HEADING.y, rig.bank.value, 'YXZ');
+    tmp.shipQuat.setFromEuler(tmp.euler);
+    if (ship.current) {
+      ship.current.position.copy(tmp.shipPos);
+      ship.current.quaternion.copy(tmp.shipQuat);
+    }
 
     const { pos, tgt } = tmp;
     if (rig.mode === 'flyby') {
       flight.sample(rig.flight.u, tmp.a, tmp.b);
-      tmp.a.add(tmp.shipPos);
-      tmp.b.add(tmp.shipPos);
-      pos.lerpVectors(tmp.holdPos.set(0, 0, 0), tmp.a, rig.blend.value);
-      tgt.lerpVectors(HOLD_TARGET, tmp.b, rig.blend.value);
+      // Ship-frame points -> world (relative to FLYBY).
+      tmp.a.applyQuaternion(tmp.shipQuat).add(tmp.shipPos);
+      tmp.b.applyQuaternion(tmp.shipQuat).add(tmp.shipPos);
+      tmp.hold.lerpVectors(CRAWL_TARGET, HOLD_TARGET, rig.look.tilt);
+      pos.set(0, 0, 0).lerp(tmp.a, rig.blend.value);
+      tgt.copy(tmp.hold).lerp(tmp.b, rig.blend.value);
       pos.add(FLYBY);
       tgt.add(FLYBY);
     } else {
       room.sample(rig.room.u, pos, tgt);
     }
-    // Looking straight down makes "up" ambiguous; lean up toward forward (-Z) as we tip over.
+    // "Up": the world's up, or once riding the ship, the ship's up. Looking
+    // straight down makes up ambiguous, so it leans toward forward as we tip over.
     tmp.dir.subVectors(tgt, pos).normalize();
-    const steep = THREE.MathUtils.smoothstep(Math.abs(tmp.dir.y), 0.8, 0.98);
-    camera.up.copy(tmp.up).lerp(tmp.forwardUp, steep).normalize();
+    const flying = rig.mode === 'flyby' ? rig.blend.value : 0;
+    tmp.shipUp.set(0, 1, 0).applyQuaternion(tmp.shipQuat);
+    tmp.shipForward.set(0, 0, -1).applyQuaternion(tmp.shipQuat);
+    tmp.upHint.copy(tmp.up).lerp(tmp.shipUp, flying);
+    const forward = rig.mode === 'flyby' ? tmp.shipForward : tmp.forwardUp;
+    const steep = THREE.MathUtils.smoothstep(Math.abs(tmp.dir.dot(tmp.upHint)), 0.75, 0.97);
+    tmp.upHint.lerp(forward, steep).normalize();
+    tmp.look.lookAt(pos, tgt, tmp.upHint);
+    tmp.wantQuat.setFromRotationMatrix(tmp.look);
+    // Turn gradually: the camera's orientation eases toward where it should
+    // point, so a swing in the path never becomes a jerk. Position is exact.
+    if (rig.snap || reduced) {
+      camera.quaternion.copy(tmp.wantQuat);
+      rig.snap = false;
+    } else {
+      // Turn gently while flying, but lock on during the final dive into the
+      // vent, so its black opening fills the frame exactly at the hidden cut.
+      const dive = THREE.MathUtils.smoothstep(rig.flight.u, 0.55, 0.8);
+      const rate = rig.mode === 'flyby' ? THREE.MathUtils.lerp(3.2, 40, dive) : 6;
+      camera.quaternion.slerp(tmp.wantQuat, 1 - Math.exp(-rate * Math.min(dt, 0.1)));
+    }
+    camera.up.copy(tmp.upHint);
     camera.position.copy(pos);
-    camera.lookAt(tgt);
     camera.updateMatrixWorld();
     if (camera.fov !== rig.fov.value) {
       camera.fov = rig.fov.value;
       camera.updateProjectionMatrix();
     }
 
-    // Helmet follows the head, or the hand while carried.
+    // Helmet: on the head, carried along its path, or set down.
     const h = hunter.current;
     const hm = helmet.current;
-    if (h && hm) {
-      h.root.updateMatrixWorld(true);
-      tmp.head.copy(HEAD_STANDING).add(h.root.position);
-      tmp.head.y -= SIT_DROP * h.pose.sit;
-      if (rig.helmet.state === 'worn') {
-        h.head.getWorldPosition(tmp.head);
-        hm.position.copy(tmp.head);
-        hm.rotation.x = h.head.rotation.x;
-      } else if (rig.helmet.state === 'held') {
-        h.hand.getWorldPosition(tmp.hand);
-        hm.position.copy(tmp.hand).add(rig.helmet.offset);
-        hm.position.y += rig.helmet.lift;
-      }
-      // Hide the body the moment the camera is inside the head.
-      if (rig.mode === 'cockpit' && camera.position.distanceTo(tmp.head) < 0.2)
-        h.root.visible = false;
+    if (!h || !hm) return;
+    const hs = rig.helmet;
+    if (hs.state === 'worn') {
+      hm.position.copy(h.headWorld());
+      h.head.getWorldQuaternion(hm.quaternion);
+    } else if (hs.state === 'carried' && hs.path) {
+      hs.path.getPoint(Math.min(1, hs.u), hm.position);
+      hm.quaternion.slerpQuaternions(
+        hs.from,
+        tmp.shelfQuat,
+        THREE.MathUtils.smoothstep(hs.u, 0.35, 1),
+      );
     }
+    // The hair only shows once the helmet has lifted clear of the head.
+    if (hunter.current)
+      hunter.current.hair.visible =
+        rig.helmet.state === 'placed' || (rig.helmet.state === 'carried' && rig.helmet.u > 0.18);
+    // Hands follow the helmet's grips (weights blend between rest and grip).
+    hm.updateMatrixWorld();
+    tmp.gripL.copy(GRIP_L).applyMatrix4(hm.matrixWorld);
+    tmp.gripR.copy(GRIP_R).applyMatrix4(hm.matrixWorld);
+    h.reach(tmp.gripL, rig.hands.left, tmp.gripR, rig.hands.right);
+    // Hide the body the moment the camera is inside the head.
+    if (rig.mode === 'cockpit' && camera.position.distanceTo(h.headWorld()) < 0.2)
+      h.root.visible = false;
   }, -1);
 
   // ---------- The timeline ----------
   useLayoutEffect(() => {
     const h = hunter.current!;
     const hm = helmet.current!;
-    Object.assign(rig, { mode: 'flyby', shipTimeOverride: null });
+    Object.assign(rig, { mode: 'flyby', shipTimeOverride: null, snap: true });
+    rig.look.tilt = 0;
     rig.blend.value = 0;
+    rig.bank.value = BANK;
     rig.flight.u = 0;
     rig.room.u = 0;
     rig.fov.value = 55;
-    Object.assign(rig.helmet, { state: 'worn', lift: 0 });
+    Object.assign(rig.helmet, { state: 'worn', u: 0, path: null });
+    h.hair.visible = false;
+    Object.assign(rig.hands, { left: 0, right: 0 });
     h.root.position.copy(HUNTER_START);
     h.root.visible = true;
-    Object.assign(h.pose, { sit: 0, raise: 0, reach: 0, turn: 0, nod: 0 });
-    hm.rotation.set(0, 0, 0);
+    Object.assign(h.pose, { sit: 0, lean: 0, nod: 0, turn: 0 });
     ventOpen.current = 0;
     cockpitFx.ductLights.current = 1;
     cockpitFx.grateOpen.current = 0;
@@ -224,55 +303,71 @@ export function Arrival({ started }: { started: boolean }) {
 
     const tl = gsap.timeline({
       paused: true,
-      onComplete: () => useExperience.getState().advance(),
+      onComplete: () => {
+        resumeAt = 0;
+        useExperience.getState().advance();
+      },
     });
-    // Everything is authored in seconds, then played slower for a calmer, filmic pace.
-    tl.timeScale(0.65);
+    tl.timeScale(ARRIVAL.timeScale);
     timeline.current = tl;
     const toCockpit = () => {
       rig.mode = 'cockpit';
+      rig.snap = true;
       audio.startAmbience();
     };
-    // Helmet off: both hands up (elbows bent), head bows, the helmet lifts clear,
-    // the head comes back up, then the right arm carries it down to the shelf.
+
+    /** Lift the helmet off, carry it to the shelf, release, sit. Starts at `at`. */
     const helmetOff = (at: number) => {
-      tl.to(h.pose, { raise: 1, duration: 0.8, ease: 'power2.inOut' }, at);
-      tl.to(h.pose, { nod: 1, duration: 0.6, ease: 'sine.inOut' }, at + 0.5);
+      // Lean in a little, bow the head, both hands up to the helmet.
+      tl.to(h.pose, { lean: 0.22, duration: 0.8, ease: 'sine.inOut' }, at);
+      tl.to(rig.hands, { left: 1, right: 1, duration: 0.9, ease: 'power2.inOut' }, at);
+      tl.to(h.pose, { nod: 1, duration: 0.7, ease: 'sine.inOut' }, at + 0.4);
+      // Lift it off: up and a touch forward, then down in front, then to the shelf.
       tl.call(
         () => {
-          h.hand.getWorldPosition(tmp.hand);
-          rig.helmet.offset.copy(hm.position).sub(tmp.hand);
-          rig.helmet.state = 'held';
+          const start = hm.position.clone();
+          const lifted = start.clone().add(new THREE.Vector3(0, 0.26, -0.06));
+          const chest = h.root.position.clone().add(new THREE.Vector3(0.12, 1.2, -0.36));
+          const shelf = new THREE.Vector3(...HELMET_ON_SHELF.position);
+          const overShelf = shelf.clone().add(new THREE.Vector3(-0.05, 0.12, -0.05));
+          rig.helmet.path = new THREE.CatmullRomCurve3([start, lifted, chest, overShelf, shelf]);
+          rig.helmet.from.copy(hm.quaternion);
+          rig.helmet.state = 'carried';
+          cue('clank', lore.captions.helmet);
         },
         [],
         at + 1.1,
       );
-      tl.to(rig.helmet, { lift: 0.2, duration: 0.7, ease: 'power2.inOut' }, at + 1.1);
-      tl.to(h.pose, { nod: 0, duration: 0.6, ease: 'sine.inOut' }, at + 1.5);
-      tl.to(h.pose, { turn: -1.2, reach: 1, duration: 1.2, ease: 'power2.inOut' }, at + 1.9);
-      tl.to(rig.helmet, { lift: 0, duration: 1.2, ease: 'power2.inOut' }, at + 1.9);
-      tl.to(
-        hm.rotation,
-        { x: 0, y: HELMET_ON_SHELF.rotationY, duration: 1.2, ease: 'power2.inOut' },
-        at + 1.9,
-      );
-      tl.call(() => void (rig.helmet.state = 'placed'), [], at + 3.1);
-      const [hx, hy, hz] = HELMET_ON_SHELF.position;
-      tl.to(hm.position, { x: hx, y: hy, z: hz, duration: 0.4, ease: 'power2.out' }, at + 3.1);
-      tl.to(h.pose, { reach: 0, raise: 0, turn: 0, duration: 0.8, ease: 'power2.inOut' }, at + 3.5);
+      tl.to(rig.helmet, { u: 0.3, duration: 0.8, ease: 'power2.out' }, at + 1.1);
+      tl.to(h.pose, { nod: 0, lean: 0.12, duration: 0.6, ease: 'sine.inOut' }, at + 1.7);
+      // Turn toward the shelf; the left hand lets go as the right carries it over.
+      tl.to(h.pose, { turn: -0.85, duration: 1.2, ease: 'sine.inOut' }, at + 2.1);
+      tl.to(rig.hands, { left: 0, duration: 0.7, ease: 'sine.inOut' }, at + 2.6);
+      tl.to(rig.helmet, { u: 1, duration: 1.3, ease: 'sine.inOut' }, at + 2.1);
+      tl.call(() => void (rig.helmet.state = 'placed'), [], at + 3.4);
+      // Let go, straighten, turn back, and sit.
+      tl.to(rig.hands, { right: 0, duration: 0.6, ease: 'sine.inOut' }, at + 3.4);
+      tl.to(h.pose, { turn: 0, lean: 0, duration: 0.9, ease: 'sine.inOut' }, at + 3.7);
       tl.to(
         h.root.position,
         { x: SEAT.x, z: SEAT.z, duration: 1.4, ease: 'power2.inOut' },
-        at + 4.1,
+        at + 4.2,
       );
-      tl.to(h.pose, { sit: 1, duration: 1.4, ease: 'power2.inOut' }, at + 4.1);
+      tl.to(h.pose, { sit: 1, duration: 1.4, ease: 'power2.inOut' }, at + 4.2);
     };
 
     if (reduced) {
       // Reduced motion: still frames joined by fades, no camera movement.
       const fade = (on: boolean, at: number) =>
         tl.call(() => useCinema.getState().setBlackout(on), [], at);
-      tl.call(() => void (rig.shipTimeOverride = SHIP.startZ / SHIP.speed), [], 0);
+      tl.call(
+        () => {
+          rig.look.tilt = 1;
+          rig.shipTimeOverride = ARRIVAL.shipStart + ARRIVAL.shipPass * 0.12;
+        },
+        [],
+        0,
+      );
       fade(true, 3.0);
       tl.call(
         () => {
@@ -282,7 +377,7 @@ export function Arrival({ started }: { started: boolean }) {
           h.pose.sit = 1;
           rig.helmet.state = 'placed';
           hm.position.set(...HELMET_ON_SHELF.position);
-          hm.rotation.y = HELMET_ON_SHELF.rotationY;
+          hm.quaternion.copy(tmp.shelfQuat);
           rig.room.u = room.knotU(3);
         },
         [],
@@ -301,24 +396,29 @@ export function Arrival({ started }: { started: boolean }) {
       fade(false, 7.2);
       tl.to({}, { duration: 0.6 }, 7.2);
     } else {
-      // 1. Hold, looking up, while the ship roars over and clears.
-      tl.call(() => cue('roar', '[Engines roar overhead]'), [], T.roar);
-      // 2. Ease into flight (from rest, so no jolt), then one constant-speed path to the vent.
-      tl.to(rig.blend, { value: 1, duration: T.blend, ease: 'sine.inOut' }, T.fly);
-      tl.to(rig.flight, { u: 1, duration: T.path, ease: 'none' }, T.fly);
-      tl.to(cruise, { current: 1, duration: T.blend, ease: 'sine.inOut' }, T.fly);
-      const ventAt = T.fly + T.path * flight.knotU(2);
+      // 1. One smooth tilt down from the stars to the horizon; then hold.
+      tl.to(rig.look, { tilt: 1, duration: ARRIVAL.tiltDown, ease: 'sine.inOut' }, 0);
+      tl.call(() => cue('roar', lore.captions.roar), [], ARRIVAL.roar);
+      // The bank levels out once the ship is far away (before the chase uses its frame).
+      tl.to(rig.bank, { value: 0, duration: 2.5, ease: 'sine.inOut' }, ARRIVAL.fly - 2.5);
+      // 2. Ease from rest into flight, then one constant-speed path to the vent.
+      tl.to(rig.blend, { value: 1, duration: ARRIVAL.blend, ease: 'sine.inOut' }, ARRIVAL.fly);
+      tl.to(rig.flight, { u: 1, duration: ARRIVAL.path, ease: 'sine.in' }, ARRIVAL.fly);
+      tl.to(cruise, { current: 1, duration: ARRIVAL.blend, ease: 'sine.inOut' }, ARRIVAL.fly);
+      const ventAt = ARRIVAL.fly + ARRIVAL.path * 0.75;
       tl.to(ventOpen, { current: 1, duration: 0.8, ease: 'power2.out' }, ventAt);
-      tl.call(() => cue('clank', '[Vent hatch opens]'), [], ventAt);
-      // 3. Black frame inside the vent: carry on into the cockpit duct, decelerating into the eyes.
+      tl.call(() => cue('clank', lore.captions.ventOpen), [], ventAt);
+      // 3. Black frame in the vent: carry on into the cockpit duct, down to behind the shoulder.
       tl.call(toCockpit, [], T_DUCT);
       tl.call(() => void (cockpitFx.ductLights.current = 0), [], T_DUCT);
       tl.to(cockpitFx.ductLights, { current: 1, duration: 0.6, ease: 'steps(6)' }, T_DUCT + 0.05);
       tl.to(cockpitFx.grateOpen, { current: 1, duration: 0.6, ease: 'power2.out' }, T_DUCT + 0.4);
-      tl.call(() => cue('clank', '[Ceiling grate opens]'), [], T_DUCT + 0.4);
-      tl.to(rig.room, { u: 1, duration: T.room, ease: 'power2.out' }, T_DUCT);
-      tl.to(rig.fov, { value: 62, duration: T.room, ease: 'sine.inOut' }, T_DUCT);
-      helmetOff(T_DUCT + 1.1);
+      tl.call(() => cue('clank', lore.captions.grateOpen), [], T_DUCT + 0.4);
+      tl.to(rig.room, { u: room.knotU(3), duration: ARRIVAL.roomIn, ease: 'power2.out' }, T_DUCT);
+      tl.to(rig.fov, { value: 62, duration: ARRIVAL.roomIn, ease: 'sine.inOut' }, T_DUCT);
+      // 4. The helmet comes off while the camera waits behind the shoulder; then into the eyes.
+      helmetOff(T_SHOULDER - 0.4);
+      tl.to(rig.room, { u: 1, duration: ARRIVAL.roomOut, ease: 'sine.inOut' }, T_EYES);
     }
 
     return () => {
@@ -332,10 +432,20 @@ export function Arrival({ started }: { started: boolean }) {
   }, [camera, reduced, rig, tmp, flight, room]);
 
   useEffect(() => {
-    if (!started) return;
+    if (!started) {
+      resumeAt = 0; // a fresh run (e.g. replaying the intro) starts at the top
+      return;
+    }
     const shot = Number(new URLSearchParams(location.search).get('shot'));
-    if (shot > 0) timeline.current?.pause(shot);
-    else timeline.current?.play();
+    const tl = timeline.current;
+    if (!tl) return;
+    if (shot > 0) tl.pause(shot);
+    else {
+      // Remounted mid-shot (e.g. a hot reload): carry on from where it was,
+      // firing the beats in between, instead of playing it all again.
+      if (resumeAt > 0) tl.seek(resumeAt, false);
+      tl.play();
+    }
   }, [started]);
 
   return (

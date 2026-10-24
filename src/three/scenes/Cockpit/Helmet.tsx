@@ -4,7 +4,8 @@
  * plates, small ear caps, and a thin maroon crest stripe.
  * Origin is the center of the wearer's head; the visor faces -Z.
  */
-import { forwardRef, useMemo } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { useModeledParts } from '../Arrival/hunterParts';
 import * as THREE from 'three';
 
 export const Helmet = forwardRef<THREE.Group, JSX.IntrinsicElements['group']>(
@@ -32,8 +33,13 @@ export const Helmet = forwardRef<THREE.Group, JSX.IntrinsicElements['group']>(
       [],
     );
 
+    // The modeled helmet (public/models/hunter.glb) replaces these primitives once loaded.
+    const local = useRef<THREE.Group>(null);
+    useImperativeHandle(ref, () => local.current!, []);
+    useModeledParts(local, 'Helmet');
+
     return (
-      <group ref={ref} {...props}>
+      <group ref={local} {...props}>
         {/* Dome */}
         <mesh position={[0, 0.02, 0]} scale={[1, 1.08, 1.05]} material={m.shell}>
           <sphereGeometry args={[0.15, 32, 24]} />

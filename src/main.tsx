@@ -20,5 +20,10 @@ const app = (
 
 // /dossier is prerendered to static HTML at build time; attach to it instead
 // of re-rendering. Every other route starts from an empty root.
-if (container.hasChildNodes()) hydrateRoot(container, app);
+// Dev only: /?export=hunter exports the hunter model for Blender (scripts/export-hunter.mjs).
+if (import.meta.env.DEV && new URLSearchParams(location.search).get('export') === 'hunter') {
+  void import('./dev/ExportHunter').then(({ ExportHunter }) =>
+    createRoot(container).render(<ExportHunter />),
+  );
+} else if (container.hasChildNodes()) hydrateRoot(container, app);
 else createRoot(container).render(app);

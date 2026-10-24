@@ -181,3 +181,51 @@ export const consoleTexture = memo(() => {
   noise(ctx, size, rand, 0.15);
   return toTexture(c, 2);
 });
+
+/** Diamond-plate steel for the floor: a lattice of raised lozenges with scuffs. */
+export const diamondPlateTexture = memo(() => {
+  const size = 256;
+  const [c, ctx] = canvas(size);
+  const rand = seeded(31);
+  ctx.fillStyle = '#5c6066';
+  ctx.fillRect(0, 0, size, size);
+  const step = 32;
+  for (let y = 0; y < size + step; y += step / 2) {
+    for (let x = 0; x < size + step; x += step) {
+      const ox = (y / (step / 2)) % 2 ? step / 2 : 0;
+      ctx.save();
+      ctx.translate(x + ox, y);
+      ctx.rotate(((y / (step / 2)) % 2 ? 1 : -1) * 0.78);
+      ctx.fillStyle = '#8a8f96';
+      ctx.fillRect(-11, -2.5, 22, 5);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(-11, 2.5, 22, 1.5);
+      ctx.restore();
+    }
+  }
+  for (let i = 0; i < 60; i++) {
+    ctx.strokeStyle = `rgba(30,30,30,${0.1 + rand() * 0.15})`;
+    ctx.beginPath();
+    const x = rand() * size;
+    const y = rand() * size;
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (rand() - 0.5) * 40, y + (rand() - 0.5) * 40);
+    ctx.stroke();
+  }
+  return toTexture(c, 6);
+});
+
+/** Brushed metal: fine horizontal streaks, for shiny console tops and shelves. */
+export const brushedMetalTexture = memo(() => {
+  const size = 256;
+  const [c, ctx] = canvas(size);
+  const rand = seeded(17);
+  ctx.fillStyle = '#b8bec6';
+  ctx.fillRect(0, 0, size, size);
+  for (let i = 0; i < 900; i++) {
+    const shade = 150 + rand() * 90;
+    ctx.fillStyle = `rgba(${shade},${shade + 4},${shade + 10},0.35)`;
+    ctx.fillRect(rand() * size, rand() * size, 30 + rand() * 120, 1);
+  }
+  return toTexture(c, 2);
+});

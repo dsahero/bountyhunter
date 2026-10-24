@@ -1,19 +1,21 @@
 import { useSettings } from '../state/settings';
 import { useExperience } from '../state/experience';
 import { LoadingBar } from './LoadingBar';
-import { rewardText } from '../content/derived';
 import { audio } from '../audio/engine';
-import { useReducedMotion, useSystemReducedMotion } from '../lib/reducedMotion';
+import { useReducedMotion } from '../lib/reducedMotion';
+import { lore } from '../content/lore';
+import { fillTokens } from '../content/derived';
 
 /**
  * "Click to enter". Browsers only allow audio to start after a user gesture,
  * so the gate doubles as the moment we ask whether sound should be on.
+ * Full motion is the default; reduced motion is an explicit choice here.
  */
 export function StartGate() {
   const setSettings = useSettings((s) => s.set);
   const advance = useExperience((s) => s.advance);
-  const systemReduced = useSystemReducedMotion();
   const reduced = useReducedMotion();
+  const g = lore.gate;
 
   const enter = (sound: boolean) => {
     setSettings({ soundEnabled: sound });
@@ -24,35 +26,29 @@ export function StartGate() {
 
   return (
     <section className="gate" aria-labelledby="gate-title">
-      <p className="gate__kicker">Bounty Guild // Secure Contract Terminal</p>
+      <p className="gate__kicker">{g.kicker}</p>
       <h1 id="gate-title" className="gate__title">
-        Incoming Contract
+        {g.title}
       </h1>
-      <p className="gate__sub">
-        Priority: Extreme · Target: Classified · Reward: {rewardText()} credits
-      </p>
+      <p className="gate__sub">{fillTokens(g.subtitle)}</p>
       <div className="gate__actions">
         <button className="btn" onClick={() => enter(true)} autoFocus>
-          Enter with sound
+          {g.enterWithSound}
         </button>
         <button className="btn btn--ghost" onClick={() => enter(false)}>
-          Enter silently
+          {g.enterSilently}
         </button>
       </div>
-      {systemReduced && (
-        <p className="gate__motion">
-          {reduced
-            ? 'Your device asks for reduced motion, so the cinematic will play as still frames.'
-            : 'Full motion is on, overriding your device’s reduced-motion setting.'}{' '}
-          <button
-            className="gate__motion-toggle"
-            onClick={() => setSettings({ reducedMotion: reduced ? 'off' : 'on' })}
-          >
-            {reduced ? 'Play the full cinematic' : 'Use reduced motion'}
-          </button>
-        </p>
-      )}
-      <LoadingBar label="Ship systems" />
+      <p className="gate__motion">
+        {reduced ? g.reducedMotionOn : g.reducedMotionOff}{' '}
+        <button
+          className="gate__motion-toggle"
+          onClick={() => setSettings({ reducedMotion: reduced ? 'off' : 'on' })}
+        >
+          {reduced ? g.useFullMotion : g.useReducedMotion}
+        </button>
+      </p>
+      <LoadingBar label={g.title} />
     </section>
   );
 }

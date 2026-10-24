@@ -1,8 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { portfolio } from '../src/content/portfolio';
+import { chronological } from '../src/hub/timeline';
 
 const NAME = portfolio.identity.name;
-const FIRST_ORG = portfolio.charges[0]!.org;
+// The Experience panel opens on the earliest role (same ordering the site uses).
+const FIRST_ORG = chronological()[0]!.org;
 
 /** Fail the test on any console error or uncaught exception (e.g. hydration mismatches). */
 function trackErrors(page: Page) {
@@ -60,8 +62,7 @@ test('full intro plays through the 3D scenes into the cockpit', async ({ page })
   // The arrival runs ~45s (slowed for pacing), then the HUD appears over the cockpit.
   await expect(page.locator('canvas')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole('heading', { name: NAME })).toBeVisible({ timeout: 120_000 });
-  // The briefing types out, then becomes the dossier menu.
-  await expect(page.getByRole('button', { name: /Show target|Charges/ }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /Charges/ })).toBeAttached();
   expect(errors).toEqual([]);
 });
 
@@ -69,15 +70,10 @@ test('cockpit stations open from the computer and close with Esc', async ({ page
   const errors = trackErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: /Skip intro/ }).click();
-  // Skip the briefing if it's still typing; otherwise the menu is already up.
-  await page
-    .getByRole('button', { name: /Show target|Charges/ })
-    .first()
-    .waitFor({ timeout: 30_000 });
-  const showTarget = page.getByRole('button', { name: /Show target/ });
-  // In-world buttons ride the camera's breathing bob, so they're never "stable": force the click.
-  if (await showTarget.isVisible()) await showTarget.click({ force: true });
-  await page.getByRole('button', { name: /Charges/ }).click({ force: true });
+  // The in-world screen is a canvas; its buttons are mirrored as real (visually hidden) buttons.
+  const charges = page.getByRole('button', { name: /Charges/ });
+  await charges.waitFor({ state: 'attached', timeout: 30_000 });
+  await charges.dispatchEvent('click');
   await expect(page.getByRole('heading', { name: 'Charges' })).toBeVisible();
   await expect(page.getByText(FIRST_ORG).first()).toBeVisible();
   await page.keyboard.press('Escape');
@@ -88,19 +84,40 @@ test('cockpit stations open from the computer and close with Esc', async ({ page
 test('arrow keys and Enter drive the console', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Skip intro/ }).click();
-  const showTarget = page.getByRole('button', { name: /Show target/ });
   await page
-    .getByRole('button', { name: /Show target|Charges/ })
-    .first()
-    .waitFor({ timeout: 30_000 });
-  if (await showTarget.isVisible()) await showTarget.click({ force: true });
-  await page.getByRole('button', { name: /Charges/ }).waitFor();
-  await page.keyboard.press('ArrowDown'); // -> second file
-  await page.keyboard.press('ArrowDown'); // -> third file
+    .getByRole('button', { name: /Charges/ })
+    .waitFor({ state: 'attached', timeout: 30_000 });
+  // The menu focuses its first file; two steps down is the third (Experience).
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('region', { name: /Charges|Homeworld|Wanted/ })).toBeVisible();
-  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: 'Charges' })).toBeVisible();
+  await page.keyboard.press('Backspace');
   await expect(page.locator('.panel')).toHaveCount(0);
+});
+
+test('the guitar starts the attack; beating the terminal unlocks the last poster', async ({ page }) => {
+  test.setTimeout(90_000);
+  const errors = trackErrors(page);
+  const site = portfolio.site;
+  await page.goto('/');
+  await page.getByRole('button', { name: /Skip intro/ }).click();
+  // The guitar is found by snooping; keyboard/screen-reader users get it in the objects list.
+  const guitar = page.locator('#object-guitar');
+  await guitar.waitFor({ state: 'attached', timeout: 30_000 });
+  await guitar.dispatchEvent('click');
+  await expect(page.getByRole('heading', { name: site.attack.guitarTitle })).toBeVisible();
+  // Comm, alarms, then the console turns into the defense terminal.
+  const skip = page.getByRole('button', { name: site.attack.skipStage });
+  await skip.waitFor({ state: 'attached', timeout: 30_000 });
+  for (let i = 0; i < 3; i++) await skip.dispatchEvent('click');
+  await expect(page.getByText(site.attack.won).first()).toBeAttached();
+  const projects = page.locator('[id="console-station:projects"]');
+  await projects.waitFor({ state: 'attached', timeout: 30_000 });
+  await projects.dispatchEvent('click');
+  const classified = portfolio.propaganda.find((p) => p.classified)!;
+  await expect(page.getByText(classified.title).first()).toBeVisible();
+  expect(errors).toEqual([]);
 });
 
 test('devices without WebGL get the 2D cockpit', async ({ page }) => {

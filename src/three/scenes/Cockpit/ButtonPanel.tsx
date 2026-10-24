@@ -10,6 +10,9 @@ import { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { seeded } from '../../procedural/textures';
+import { useClickable } from '../../stations/common';
+import { cue } from '../../../audio/cues';
+import { portfolio } from '../../../content/portfolio';
 
 const PALETTE = ['#ffb347', '#ffb347', '#ff5a3c', '#5fd4ff', '#7dff9a'].map(
   (c) => new THREE.Color(c),
@@ -54,21 +57,21 @@ export function ButtonPanel({
     );
     const o = new THREE.Object3D();
     const blinkers: { index: number; color: THREE.Color; rate: number; offset: number }[] = [];
-    const inner = { w: width * 0.9, d: depth * 0.8 };
-    const cellX = inner.w / cols;
-    const cellZ = inner.d / rows;
-    const size = Math.min(cellX, cellZ) * 0.6;
+    // One square pitch in both directions, so every key is the same distance
+    // from its neighbors; the grid is centered on the plate.
+    const pitch = Math.min((width * 0.9) / cols, (depth * 0.85) / rows);
+    const inner = { w: pitch * cols, d: pitch * rows };
+    const size = pitch * 0.6;
     const keyH = 0.01;
     let run = PALETTE[0]!;
     let i = 0;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         if (c % 4 === 0) run = PALETTE[Math.floor(rand() * PALETTE.length)]!;
-        const x = -inner.w / 2 + (c + 0.5) * cellX;
-        const hidden = (gap !== undefined && Math.abs(x) < gap) || rand() < 0.1;
-        const wide = rand() < 0.18 ? 1.8 : 1;
-        o.position.set(x, keyH / 2, -inner.d / 2 + (r + 0.5) * cellZ);
-        o.scale.set(hidden ? 0 : size * wide, hidden ? 0 : keyH, hidden ? 0 : size);
+        const x = -inner.w / 2 + (c + 0.5) * pitch;
+        const hidden = gap !== undefined && Math.abs(x) < gap;
+        o.position.set(x, keyH / 2, -inner.d / 2 + (r + 0.5) * pitch);
+        o.scale.set(hidden ? 0 : size, hidden ? 0 : keyH, hidden ? 0 : size);
         o.updateMatrix();
         m.setMatrixAt(i, o.matrix);
         const lit = rand() > 0.25;
@@ -90,6 +93,17 @@ export function ButtonPanel({
     if (keys.instanceColor) keys.instanceColor.needsUpdate = true;
   });
 
+  // Every key is pressable; none of them is labeled.
+  const press = useClickable(
+    useMemo(
+      () => () => {
+        const quips = portfolio.site.buttonQuips;
+        cue('click', quips[Math.floor(Math.random() * quips.length)]);
+      },
+      [],
+    ),
+  );
+
   return (
     <group {...props}>
       {/* Bezel, then the raised plate whose top face is y = 0 */}
@@ -99,7 +113,7 @@ export function ButtonPanel({
       <mesh position={[0, -0.008, 0]} material={plateMat}>
         <boxGeometry args={[width, 0.016, depth]} />
       </mesh>
-      <primitive object={keys} />
+      <primitive object={keys} {...press} />
     </group>
   );
 }

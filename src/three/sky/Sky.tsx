@@ -1,5 +1,5 @@
 /**
- * Deep space: stars, the homeworld Charlotsleve with its two moons, and the
+ * Deep space: stars, the orange homeworld with its moons, and the
  * sun's light.
  *
  * The whole sky group follows the camera every frame (the classic skybox
@@ -9,14 +9,14 @@
  */
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Stars } from '@react-three/drei';
 import * as THREE from 'three';
-import { portfolio } from '../../content/portfolio';
 import type { Tier } from '../../lib/quality';
 import { Traffic } from './Traffic';
 import { StarStream } from './StarStream';
 import { DistantWorlds } from './DistantWorlds';
-import { cruise } from './motion';
+import { cabinLevel } from '../scenes/Cockpit/cabinLight';
+import { Drift } from './Drift';
+import { earthCloudsTexture, orangeEarthTexture, plutoTexture } from '../procedural/planetTextures';
 
 /** Direction from the viewer toward the planet: ahead and below, like the film's opening. */
 export const PLANET_DIR = new THREE.Vector3(0.15, -0.55, -1).normalize();
@@ -42,10 +42,15 @@ const atmosphereFragment = /* glsl */ `
   }
 `;
 
-export function Sky({ tier, cruising }: { tier: Tier; cruising: boolean }) {
+export function Sky({ tier }: { tier: Tier }) {
   const group = useRef<THREE.Group>(null);
-  const backdrop = useRef<THREE.Group>(null);
-  const { planet } = portfolio.education;
+  const textures = useMemo(
+    () => ({ earth: orangeEarthTexture(), clouds: earthCloudsTexture(), pluto: plutoTexture() }),
+    [],
+  );
+  const clouds = useRef<THREE.Mesh>(null);
+  const sun = useRef<THREE.DirectionalLight>(null);
+  const homeworld = useRef<THREE.Mesh>(null);
 
   const atmosphere = useMemo(
     () =>
@@ -60,50 +65,64 @@ export function Sky({ tier, cruising }: { tier: Tier; cruising: boolean }) {
     [],
   );
 
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera, clock }, dt) => {
     group.current?.position.copy(camera.position);
-    // The far stars drift slowly past too (much slower than the near stream: parallax).
-    if (backdrop.current) backdrop.current.rotation.x += dt * 0.004 * cruise.current;
+    // The cabin goes dark in an emergency (the canopy's blast shutters, so to speak).
+    if (sun.current) {
+      sun.current.intensity = 2.4 * Math.max(0.08, cabinLevel(clock.elapsedTime));
+    }
+    // The homeworld turns, and its clouds a little faster.
+    if (homeworld.current) homeworld.current.rotation.y += dt * 0.004;
+    if (clouds.current) clouds.current.rotation.y += dt * 0.007;
   });
 
-  // Everything sits inside the star sphere (radius 300+), so stars are always behind.
-  const planetPos = PLANET_DIR.clone().multiplyScalar(250);
+  // Stars are drawn first without depth, so the planets always paint over them.
+  const planetPos = PLANET_DIR.clone().multiplyScalar(250).toArray();
   return (
     <>
       <color attach="background" args={['#010208']} />
-      <directionalLight position={SUN_POSITION} color="#fff1dc" intensity={2.4} />
+      <directionalLight ref={sun} position={SUN_POSITION} color="#fff1dc" intensity={2.4} />
       <group ref={group}>
-        <group ref={backdrop}>
-          <Stars
-            radius={300}
-            depth={80}
-            count={tier === 'high' ? 7000 : 3000}
-            factor={7}
-            fade
-            speed={0.4}
-          />
-        </group>
-        <group position={planetPos}>
-          <mesh rotation-z={0.3}>
-            <sphereGeometry args={[120, 96, 64]} />
-            <meshStandardMaterial color={planet.color} roughness={1} />
-          </mesh>
+        {/* Stars stream slowly backward past the ship, always */}
+        <StarStream count={tier === 'high' ? 7000 : 3000} />
+        {/* Planets, moons, and galaxies drift back past the ship too, once aboard */}
+        <Drift intro={planetPos} clearance={360}>
+          {/* An orange Earth: continents, oceans, ice caps, and a cloud layer */}
+          <group rotation-z={0.3}>
+            <mesh ref={homeworld}>
+              <sphereGeometry args={[120, 96, 64]} />
+              <meshStandardMaterial map={textures.earth} roughness={0.9} />
+            </mesh>
+            <mesh ref={clouds} scale={1.012}>
+              <sphereGeometry args={[120, 96, 64]} />
+              <meshStandardMaterial
+                map={textures.clouds}
+                transparent
+                depthWrite={false}
+                roughness={1}
+              />
+            </mesh>
+          </group>
           <mesh material={atmosphere} scale={1.03}>
             <sphereGeometry args={[120, 96, 64]} />
           </mesh>
-        </group>
+        </Drift>
         <Traffic />
         <DistantWorlds />
-        {cruising && <StarStream count={tier === 'high' ? 260 : 120} />}
         {/* Two moons, as in the film's first frame */}
-        <mesh position={[-87, -20, -250]}>
-          <sphereGeometry args={[9, 32, 24]} />
-          <meshStandardMaterial color="#b9a58c" roughness={1} />
-        </mesh>
-        <mesh position={[-55, -7, -283]}>
-          <sphereGeometry args={[5, 32, 24]} />
-          <meshStandardMaterial color="#8f9aa6" roughness={1} />
-        </mesh>
+        <Drift intro={[-87, -20, -250]}>
+          <mesh>
+            <sphereGeometry args={[9, 32, 24]} />
+            <meshStandardMaterial color="#b9a58c" roughness={1} />
+          </mesh>
+        </Drift>
+        {/* A small low-res Pluto */}
+        <Drift intro={[-55, -7, -283]}>
+          <mesh rotation={[0.2, -1.8, 0]}>
+            <sphereGeometry args={[5, 24, 16]} />
+            <meshStandardMaterial map={textures.pluto} roughness={1} />
+          </mesh>
+        </Drift>
       </group>
     </>
   );

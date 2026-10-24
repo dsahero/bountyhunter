@@ -11,18 +11,17 @@ import { Canvas } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
 import { useExperience } from '../state/experience';
-import { usePortrait } from '../lib/useMediaQuery';
 import type { Tier } from '../lib/quality';
 import { Sky } from './sky/Sky';
 import { Cockpit } from './scenes/Cockpit/Cockpit';
 import { Arrival } from './scenes/Arrival/Arrival';
 import { CameraRig } from './camera/CameraRig';
 import { HoloClock } from './holo/holoMaterial';
-import { Effects } from './fx/Effects';
+import { Effects, OutlineOnly } from './fx/Effects';
+import { Selection } from '@react-three/postprocessing';
 
 export default function Stage({ tier }: { tier: Tier }) {
   const phase = useExperience((s) => s.phase);
-  const portrait = usePortrait();
   const maxDpr = tier === 'high' ? 2 : 1.5;
   const [dpr, setDpr] = useState(Math.min(window.devicePixelRatio, maxDpr));
 
@@ -41,17 +40,14 @@ export default function Stage({ tier }: { tier: Tier }) {
       }}
     >
       {/* Drop resolution if the frame rate sags; never below 1x. */}
-      <PerformanceMonitor onDecline={() => setDpr(1)} />
-      <HoloClock />
-      <Sky tier={tier} cruising={phase === 'hub'} />
-      {/* The console UI lives on the in-world screen, except in portrait where it's an overlay. */}
-      <Cockpit
-        tier={tier}
-        showHelmet={phase === 'hub'}
-        showConsoleUI={!portrait && phase === 'hub'}
-      />
-      {phase === 'hub' ? <CameraRig /> : <Arrival started={phase === 'arrival'} />}
-      {tier === 'high' && <Effects />}
+      <Selection>
+        <PerformanceMonitor onDecline={() => setDpr(1)} />
+        <HoloClock />
+        <Sky tier={tier} />
+        <Cockpit tier={tier} showHelmet={phase === 'hub'} />
+        {phase === 'hub' ? <CameraRig /> : <Arrival started={phase === 'arrival'} />}
+        {tier === 'high' ? <Effects /> : <OutlineOnly />}
+      </Selection>
     </Canvas>
   );
 }

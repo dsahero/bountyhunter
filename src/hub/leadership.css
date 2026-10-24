@@ -26,10 +26,8 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .leadership--world {
-    animation: none;
-  }
+.reduced-motion .leadership--world {
+  animation: none;
 }
 
 .leadership__header {

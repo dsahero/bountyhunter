@@ -8,6 +8,7 @@ import { lore } from '../../content/lore';
  */
 export function ContactPanel() {
   const { contact, identity } = portfolio;
+  const l = lore.labels;
   const [claimed, setClaimed] = useState(false);
 
   const transmit = (e: FormEvent<HTMLFormElement>) => {
@@ -15,54 +16,53 @@ export function ContactPanel() {
     const data = new FormData(e.currentTarget);
     const from = String(data.get('from') ?? '');
     const message = String(data.get('message') ?? '');
-    const subject = encodeURIComponent(`Sighting report from ${from || 'a bounty hunter'}`);
-    const body = encodeURIComponent(message);
-    window.location.href = `mailto:${contact.email}?subject=${subject}&body=${body}`;
+    const subject = encodeURIComponent(`${lore.sections.contact.lore}: ${from}`);
+    window.location.href = `mailto:${contact.email}?subject=${subject}&body=${encodeURIComponent(message)}`;
     setClaimed(true);
   };
 
   return (
     <>
-      <p className="transmission__tag">Incoming transmission · Open frequency</p>
-      <p className="panel__lead">Spotted {identity.name}? Report it directly:</p>
+      <p className="transmission__tag">{l.contactTag}</p>
+      <p className="panel__lead">{l.contactLead.replace('{NAME}', identity.name)}</p>
       <ul className="contact-links">
         <li>
-          <span>Email</span>
+          <span>{l.email}</span>
           <a href={`mailto:${contact.email}`}>{contact.email}</a>
         </li>
         <li>
-          <span>GitHub</span>
+          <span>{l.github}</span>
           <a href={contact.github} target="_blank" rel="noreferrer">
             {contact.github.replace('https://', '')}
           </a>
         </li>
         <li>
-          <span>LinkedIn</span>
+          <span>{l.linkedin}</span>
           <a href={contact.linkedin} target="_blank" rel="noreferrer">
             {contact.linkedin.replace('https://www.', '')}
           </a>
         </li>
-        {contact.other.map((l) => (
-          <li key={l.href}>
-            <span>{l.label}</span>
-            <a href={l.href}>{l.href}</a>
+        {contact.other.map((link) => (
+          <li key={link.href}>
+            <span>{link.label}</span>
+            <a href={link.href}>{link.href}</a>
           </li>
         ))}
       </ul>
 
       <form className="transmit" onSubmit={transmit}>
         <label>
-          Your name / guild
+          {l.yourName}
           <input name="from" autoComplete="name" />
         </label>
         <label>
-          Message
+          {l.message}
           <textarea name="message" rows={4} required />
         </label>
         <button className="btn" type="submit">
-          Transmit
+          {l.transmit}
         </button>
-        <p className="panel__flavor">Opens your email app with the message ready to send.</p>
+        <p className="panel__flavor">{l.transmitNote}</p>
       </form>
 
       {claimed && (
@@ -70,7 +70,7 @@ export function ContactPanel() {
           <div className="cryo" aria-hidden="true">
             <span className="cryo__name">{identity.name}</span>
           </div>
-          <span className="claimed__stamp">Bounty claimed</span>
+          <span className="claimed__stamp">{l.bountyClaimed}</span>
           <p>{lore.quips.contactSent}</p>
         </div>
       )}

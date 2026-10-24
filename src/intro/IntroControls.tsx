@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { lore } from '../content/lore';
 import { useExperience } from '../state/experience';
 
 /**
@@ -10,10 +11,10 @@ export function IntroControls() {
   return (
     <nav className="intro-controls" aria-label="Intro controls">
       <Link className="btn btn--ghost" to="/dossier">
-        Plain dossier
+        {lore.hud.plainDossier}
       </Link>
       <button className="btn btn--holo" onClick={skip}>
-        Skip intro ⏭
+        {lore.hud.skipIntro}
       </button>
     </nav>
   );

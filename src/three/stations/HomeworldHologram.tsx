@@ -11,7 +11,10 @@ import { ANCHORS, SIDE_TOP } from '../../hub/layout';
 import { portfolio } from '../../content/portfolio';
 import { makeHoloMaterial, useHoloFade, HOLO_BLUE } from '../holo/holoMaterial';
 import { makeTextSprite } from '../holo/textSprite';
-import { Projector, useFocusScale, useIsActive, useStationClick } from './common';
+import { HoloArrow, Projector, useFocusScale, useIsActive, useStationClick } from './common';
+import { chronological } from '../../hub/timeline';
+import { orgLabel } from '../../content/derived';
+import { useHub } from '../../state/hub';
 
 const PLANET_R = 0.06;
 
@@ -46,6 +49,12 @@ export function HomeworldHologram() {
       l.material.opacity = THREE.MathUtils.damp(l.material.opacity, active ? 1 : 0, 4, dt);
   });
 
+  const first = chronological()[0];
+  const toExperience = useMemo(
+    () => () => first && useHub.getState().selectCharge(first.id),
+    [first],
+  );
+
   const [x, y, z] = ANCHORS.education;
   return (
     <group>
@@ -55,6 +64,15 @@ export function HomeworldHologram() {
         radius={0.1}
         active={active}
       />
+      {first && (
+        <HoloArrow
+          label={`${orgLabel(first)} ▸`}
+          visible={active}
+          onSelect={toExperience}
+          position={[x + 0.07, y - 0.13, z + 0.12]}
+          rotation-y={Math.atan2(-x, 0.28 - z)}
+        />
+      )}
       <group position={[x, y, z]} {...click}>
         <group ref={grow}>
           <group ref={spin}>

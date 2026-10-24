@@ -35,3 +35,26 @@ describe('hub state', () => {
     expect(useLook.getState().pitch).toBeCloseTo(consoleLook().pitch);
   });
 });
+
+describe('holo off', () => {
+  it('toggles every hologram off and on, and opening a hologram station powers them back up', () => {
+    const hub = useHub.getState();
+    hub.holoShutdown();
+    expect(useHub.getState().holosOff).toBe(true);
+    hub.holoShutdown();
+    expect(useHub.getState().holosOff).toBe(false);
+    hub.holoShutdown();
+    useHub.getState().open('education');
+    expect(useHub.getState().holosOff).toBe(false);
+    useHub.getState().close();
+  });
+
+  it('arrow-key recenter brings a dragged view back onto the console', () => {
+    useHub.getState().close();
+    useLook.getState().nudge(1, 0.3);
+    expect(useHub.getState().recenter()).toBe(true);
+    const want = consoleLook();
+    expect(useLook.getState().yaw).toBeCloseTo(want.yaw);
+    expect(useHub.getState().recenter()).toBe(false);
+  });
+});

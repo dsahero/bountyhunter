@@ -7,11 +7,23 @@
  * also highlights it on the star-map timeline, and vice versa.
  */
 import { create } from 'zustand';
-import { ANCHORS, lookAtPoint, posterPoint, type StationId, type Vec3 } from '../hub/layout';
+import {
+  ANCHORS,
+  EYE,
+  GUITAR,
+  HELMET_ON_SHELF,
+  PROPS,
+  type PropId,
+  lookAtPoint,
+  posterPoint,
+  type StationId,
+  type Vec3,
+} from '../hub/layout';
 import { chargeWorldPoint } from '../hub/timeline';
 import { useLook } from './look';
 import { portfolio } from '../content/portfolio';
-import { cue } from '../audio/cues';
+import { caption, cue } from '../audio/cues';
+import { useConsoleUi } from './consoleUi';
 import { chronological } from '../hub/timeline';
 import type { Associate } from '../content/schema';
 
@@ -26,8 +38,6 @@ interface HubState {
   associate: string;
   /** Propaganda: selected project id (null = wall overview). */
   project: string | null;
-  /** The contract briefing types out once per visit. */
-  contractShown: boolean;
   open: (id: StationId) => void;
   close: () => void;
   /** Select a charge; with Experience open, the head turns to its planet. */
@@ -38,8 +48,47 @@ interface HubState {
   back: () => void;
   /** Views visited before the current one, most recent last. */
   history: View[];
-  set: (patch: Partial<Omit<HubState, 'open' | 'close' | 'set' | 'back' | 'history'>>) => void;
+  /** A cockpit object being looked at closely (side panel), if any. */
+  inspect: Inspectable | null;
+  inspectItem: (item: Inspectable) => void;
+  /** An active comms call (a contact from portfolio.site.contacts), if any. */
+  /** `connected`: a holocall rings a few times before it's picked up. */
+  call: { index: number; kind: 'voicemail' | 'cat'; connected: boolean } | null;
+  /** Call a contact: voicemail, or (the cat) a holocall on the overhead projector. */
+  startCall: (index: number) => void;
+  hangUp: () => void;
+  /** Holo off / on: every hologram in the cockpit powers down (or back up). */
+  holoShutdown: () => void;
+  holosOff: boolean;
+  /** Turn the head back onto whatever is selected (after a drag or zoom). Returns true if it moved. */
+  recenter: () => boolean;
+  set: (
+    patch: Partial<
+      Omit<
+        HubState,
+        | 'open'
+        | 'close'
+        | 'set'
+        | 'back'
+        | 'history'
+        | 'startCall'
+        | 'hangUp'
+        | 'holoShutdown'
+        | 'inspectItem'
+        | 'recenter'
+      >
+    >,
+  ) => void;
 }
+
+export type Inspectable = 'helmet' | 'guitar' | PropId;
+
+/** Where each inspectable object is (world points). */
+export const INSPECT_POINTS: Record<Inspectable, Vec3> = {
+  helmet: HELMET_ON_SHELF.position,
+  guitar: [GUITAR.position[0], GUITAR.position[1] + 0.06, GUITAR.position[2]],
+  ...PROPS,
+};
 
 /** What's on screen: the station plus anything selected inside it. */
 interface View {
@@ -52,6 +101,32 @@ interface View {
 export function targetFov(stationOpen: boolean, portrait: boolean) {
   if (portrait) return stationOpen ? 60 : 82;
   return stationOpen ? 42 : 62;
+}
+
+/** Rough size (radius, meters) of each inspectable thing, so the close-up frames it. */
+/** How much room to leave around an inspected object (1 = it fills the view). */
+const CLOSEUP_ROOM = 2.0;
+
+const INSPECT_RADIUS: Partial<Record<Inspectable, number>> = { guitar: 0.6, helmet: 0.2 };
+
+/**
+ * Lens for a close look at an inspected object: narrow enough that it fills
+ * the view (the camera zooms in; the object itself never grows).
+ */
+export function inspectFov(item: Inspectable, portrait: boolean) {
+  const [x, y, z] = INSPECT_POINTS[item];
+  const d = Math.hypot(x - EYE[0], y - EYE[1], z - EYE[2]);
+  const r = INSPECT_RADIUS[item] ?? 0.11;
+  // Frame the object with plenty of room around it (it fills about half the view).
+  const fov = ((2 * Math.atan((r * CLOSEUP_ROOM) / d) * 180) / Math.PI) * (portrait ? 1.5 : 1);
+  return Math.min(50, Math.max(18, fov));
+}
+
+/** The lens for what's on screen right now. */
+export function currentFov(portrait: boolean) {
+  const { station, inspect } = useHub.getState();
+  if (inspect) return inspectFov(inspect, portrait);
+  return targetFov(!!station, portrait);
 }
 
 /** Fraction of the screen width the station panel covers on desktop (see panels.css). */
@@ -67,7 +142,7 @@ function focusPoint(id: StationId, state: Pick<HubState, 'charge' | 'project'>):
   if (id === 'experience') return chargeWorldPoint(state.charge);
   if (id === 'projects' && state.project) {
     const i = posterOrder().findIndex((p) => p.id === state.project);
-    if (i >= 0) return posterPoint(i, posterOrder().length);
+    if (i >= 0) return posterPoint(i);
   }
   return ANCHORS[id];
 }
@@ -77,12 +152,12 @@ function focusPoint(id: StationId, state: Pick<HubState, 'charge' | 'project'>):
  * centered in the part of the screen the panel leaves uncovered; in portrait
  * it sits in the top third (the panel is a bottom sheet).
  */
-export function lookForPoint(point: Vec3) {
+export function lookForPoint(point: Vec3, fov?: number) {
   const look = lookAtPoint(point);
   if (typeof window === 'undefined') return look;
   const aspect = window.innerWidth / window.innerHeight;
   const portrait = aspect < 1;
-  const halfV = ((targetFov(true, portrait) / 2) * Math.PI) / 180;
+  const halfV = (((fov ?? targetFov(true, portrait)) / 2) * Math.PI) / 180;
   if (portrait) {
     // Put the target ~1/3 of the way down: look lower by that fraction of the half-height.
     return { ...look, pitch: look.pitch - Math.atan(Math.tan(halfV) * 0.35) };
@@ -92,6 +167,9 @@ export function lookForPoint(point: Vec3) {
   const offset = PANEL_FRACTION; // target at (1 - PANEL_FRACTION) / 2 across = this much of the half-width left of center
   return { ...look, yaw: look.yaw - Math.atan(Math.tan(halfH) * offset) };
 }
+
+/** Stations whose view is a hologram (Holo off closes them). */
+const HOLO_STATIONS: StationId[] = ['about', 'education', 'experience', 'leadership', 'skills'];
 
 /** Stations shown entirely in-world (no side panel), so they're centered. */
 export const IN_WORLD_STATIONS: StationId[] = ['leadership'];
@@ -107,10 +185,15 @@ export function consoleLook() {
 
 const firstAssociate = portfolio.associates[0]!;
 
+/** A holocall rings this many times (this far apart, ms) before it's picked up. */
+const CAT_RINGS = 3;
+const RING_GAP = 2400;
+const callTimers: number[] = [];
+
 /** Turn the head toward a station; opening one plays a soft hologram boot-up. */
 function turnTo(yaw: number, pitch: number, booting: boolean) {
-  useLook.getState().lookAt(yaw, pitch);
-  if (booting) cue('boot', '[Hologram powers up]');
+  useLook.getState().focusOn(yaw, pitch);
+  if (booting) cue('boot', portfolio.site.captions.boot);
 }
 
 export const useHub = create<HubState>((set, get) => {
@@ -132,8 +215,13 @@ export const useHub = create<HubState>((set, get) => {
       return;
     set({ history: [...get().history, v] });
   };
-  /** Show a view: set state and turn the head. */
+  /** Show a view: set state and turn the head. Choosing anything else hangs up a call. */
   const show = (v: View, booting: boolean) => {
+    if (get().call) get().hangUp();
+    useConsoleUi.getState().set({ mode: 'menu' });
+    if (get().inspect) set({ inspect: null });
+    // Opening a hologram station powers the holograms back up.
+    if (v.station && get().holosOff) set({ holosOff: false });
     set({ station: v.station, charge: v.charge, project: v.project });
     const { yaw, pitch } = v.station ? lookForStation(v.station) : consoleLook();
     turnTo(yaw, pitch, booting && !!v.station);
@@ -145,14 +233,88 @@ export const useHub = create<HubState>((set, get) => {
     unit: firstAssociate.unit,
     associate: firstAssociate.skill,
     project: null,
-    contractShown: false,
     history: [],
+    call: null,
+    inspect: null,
+    inspectItem: (item) => {
+      if (get().call) get().hangUp();
+      set({ station: null, history: [], inspect: item });
+      const portrait = typeof window !== 'undefined' && window.innerWidth < window.innerHeight;
+      const { yaw, pitch } = lookForPoint(INSPECT_POINTS[item], inspectFov(item, portrait));
+      turnTo(yaw, pitch, false);
+    },
+    startCall: (index) => {
+      const contact = portfolio.site.contacts[index];
+      if (!contact) return;
+      if (get().call) get().hangUp();
+      if (contact.kind === 'cat') {
+        set({ station: null, history: [], call: { index, kind: 'cat', connected: false } });
+        // The comm rings a few times; then the cat picks up, the hologram
+        // appears overhead, and the head turns up to it.
+        const captions = portfolio.site.captions;
+        for (let i = 0; i < CAT_RINGS; i++)
+          callTimers.push(window.setTimeout(() => cue('ring', captions.ring), i * RING_GAP));
+        callTimers.push(
+          window.setTimeout(() => {
+            if (get().call?.index !== index) return;
+            set({ call: { index, kind: 'cat', connected: true } });
+            cue('boot', captions.pickUp);
+            const { yaw, pitch } = lookAtPoint(ANCHORS.experience);
+            turnTo(yaw, pitch, false);
+          }, CAT_RINGS * RING_GAP),
+        );
+      } else {
+        set({ call: { index, kind: 'voicemail', connected: true } });
+        cue('voicemail', portfolio.site.captions.voicemail);
+        caption(`${contact.name}: ${portfolio.site.voicemail}`, 6000);
+        window.setTimeout(() => {
+          if (get().call?.index === index) set({ call: null });
+        }, 6000);
+      }
+    },
+    hangUp: () => {
+      callTimers.splice(0).forEach((t) => window.clearTimeout(t));
+      const wasCat = get().call?.kind === 'cat' && get().call?.connected;
+      set({ call: null });
+      if (wasCat) cue('holoOff', portfolio.site.captions.hangUp);
+    },
+    holosOff: false,
+    holoShutdown: () => {
+      const hub = get();
+      if (hub.holosOff) {
+        set({ holosOff: false });
+        cue('boot', portfolio.site.captions.holoOn);
+        return;
+      }
+      if (hub.call) hub.hangUp();
+      if (hub.station && HOLO_STATIONS.includes(hub.station)) hub.close();
+      set({ holosOff: true });
+      cue('holoOff', portfolio.site.captions.holoOff);
+    },
+    recenter: () => {
+      const { station, inspect } = get();
+      const want = station
+        ? lookForStation(station)
+        : inspect
+          ? lookForPoint(
+              INSPECT_POINTS[inspect],
+              inspectFov(inspect, window.innerWidth < window.innerHeight),
+            )
+          : consoleLook();
+      const look = useLook.getState();
+      const off =
+        Math.abs(Math.atan2(Math.sin(look.yaw - want.yaw), Math.cos(look.yaw - want.yaw))) +
+        Math.abs(look.pitch - want.pitch);
+      if (off < 0.02 && look.zoom === 0) return false;
+      look.focusOn(want.yaw, want.pitch);
+      return true;
+    },
     open: (id) => {
       if (get().station !== id) remember();
       show({ ...view(), station: id }, true);
     },
     close: () => {
-      set({ history: [] });
+      set({ history: [], inspect: null });
       show({ ...view(), station: null, project: null }, false);
     },
     selectCharge: (id) => {

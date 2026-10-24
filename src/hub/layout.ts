@@ -63,16 +63,79 @@ export function lookAtPoint([x, y, z]: Vec3): { yaw: number; pitch: number } {
 }
 
 /** Propaganda posters on the cargo hold's back wall: rows of up to four, centered. */
-export const POSTER_WALL = { z: 2.99, top: 1.3, rowGap: 0.88, spacing: 0.6, perRow: 4 };
-
-export function posterPoint(index: number, count: number): Vec3 {
-  const { perRow, spacing, top, rowGap, z } = POSTER_WALL;
-  const row = Math.floor(index / perRow);
-  const inRow = Math.min(perRow, count - row * perRow);
-  const col = index % perRow;
-  // Facing +Z from the seat, +X is on the left, so the first poster sits leftmost.
-  const x = ((inRow - 1) / 2 - col) * spacing;
-  const rows = Math.ceil(count / perRow);
-  const y = top + ((rows - 1) / 2 - row) * rowGap * (rows > 1 ? 1 : 0) + (rows > 1 ? 0.15 : 0);
-  return [x, y, z];
+/**
+ * Where propaganda posters get pasted up, in fill order. Every slot is in
+ * plain view from the seat (through the doorway or on the bulkhead around
+ * it): the cargo hold's back wall in two rows either side of the door, and
+ * the bulkhead flanks facing the seat. The hold's side walls are hidden
+ * behind the bulkhead, so they get none. Posters fill these in content
+ * order (the classified one last); add slots here if you add more projects.
+ */
+export interface PosterSlot {
+  position: Vec3;
+  rotationY: number;
 }
+/** Poster size in meters (small enough that none overlap the door, lights, or each other). */
+export const POSTER_SIZE = { w: 0.32, h: 0.48 };
+const BACK = 2.99;
+const UPPER = 1.5;
+const LOWER = 0.9;
+const back = (x: number, y: number): PosterSlot => ({ position: [x, y, BACK], rotationY: Math.PI });
+export const POSTER_SLOTS: readonly PosterSlot[] = [
+  back(0.6, UPPER),
+  back(-0.6, UPPER),
+  { position: [0.98, 1.35, 0.955], rotationY: Math.PI },
+  { position: [-0.98, 1.35, 0.955], rotationY: Math.PI },
+  back(0.98, UPPER),
+  back(-0.98, UPPER),
+  back(0.6, LOWER),
+  back(-0.6, LOWER),
+  back(0.98, LOWER),
+  back(-0.98, LOWER),
+];
+
+export function posterSlot(index: number): PosterSlot {
+  return POSTER_SLOTS[Math.min(index, POSTER_SLOTS.length - 1)]!;
+}
+
+export function posterPoint(index: number): Vec3 {
+  return posterSlot(index).position;
+}
+
+/** The door at the back of the cargo hold, to the rest of the ship. */
+export const CARGO_DOOR = { position: [0, 0.98, BACK] as Vec3, width: 0.56, height: 1.95 };
+
+/** The cantina guitar, hanging on the cargo hold's starboard wall. */
+/**
+ * Lying on the floor in the middle of the cargo hold, in front of the back
+ * door and under its own spotlight: in plain view through the doorway, clear
+ * of the walls and crates. Angled a little, as if set down in a hurry.
+ */
+export const GUITAR = { position: [0, 0, 2.0] as Vec3, rotationY: Math.PI - 0.5 };
+
+/**
+ * The red/blue weapon buttons: a small plate hung on two struts from the
+ * canopy's top arch, front right, clear of the overhead holograms. Tilted to face the seat.
+ */
+export const WEAPON_PLATE = { position: [0.55, 1.9, -0.68] as Vec3, tilt: -0.55 };
+
+/** A point on the weapon plate (plate-local), in world space. */
+export function onWeaponPlate(x: number, y: number, z: number): Vec3 {
+  const [px, py, pz] = WEAPON_PLATE.position;
+  const c = Math.cos(WEAPON_PLATE.tilt);
+  const s = Math.sin(WEAPON_PLATE.tilt);
+  return [px + x, py + y * c - z * s, pz + y * s + z * c];
+}
+
+/** Tchotchkes around the cockpit (each one is clickable; flavor text in portfolio.site.props). */
+export const PROPS = {
+  levers: [-0.98, SIDE_TOP, -0.56] as Vec3,
+  switches: [1.05, SIDE_TOP, -0.7] as Vec3,
+  /** Hanging from the underside of the weapon plate, beside the torpedo button. */
+  dice: onWeaponPlate(0.17, -0.015, -0.03),
+  mug: [0.92, SIDE_TOP, -0.2] as Vec3,
+  plant: [-1.14, SIDE_TOP, -0.82] as Vec3,
+  bobble: [0.86, SIDE_TOP, -0.5] as Vec3,
+  picture: [-0.88, SIDE_TOP, -0.82] as Vec3,
+};
+export type PropId = keyof typeof PROPS;

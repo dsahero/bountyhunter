@@ -12,7 +12,7 @@ import type { Associate } from '../content/schema';
 import { useDocumentMeta } from '../app/useDocumentMeta';
 import './plain.css';
 
-const credits = (n: number) => `${n.toLocaleString('en-US')} credits`;
+const credits = (n: number) => `${n.toLocaleString('en-US')} ${lore.labels.credits}`;
 
 function SectionHeading({ id, k }: { id: string; k: SectionKey }) {
   const s = lore.sections[k];
@@ -29,7 +29,7 @@ function groupByUnit(list: Associate[]) {
   return [...groups];
 }
 
-const levelWords = ['', 'Familiar', 'Working', 'Proficient', 'Advanced', 'Expert'];
+const levelWords = lore.labels.proficiencyLevels;
 
 /** Shared with scripts/prerender.mjs (via entry-server) so static HTML gets the same meta. */
 export const dossierMeta = {
@@ -57,10 +57,10 @@ export function PlainDossier() {
   return (
     <div className="plain">
       <a className="plain__skiplink" href="#main">
-        Skip to content
+        {lore.plain.skipToContent}
       </a>
       <header className="plain__header">
-        <p className="plain__kicker">Bounty Guild · Intelligence File · Declassified</p>
+        <p className="plain__kicker">{lore.plain.kicker}</p>
         <h1>{identity.name}</h1>
         <p className="plain__alias">a.k.a. “{identity.alias}”</p>
         <p className="plain__tagline">{identity.tagline}</p>
@@ -86,7 +86,7 @@ export function PlainDossier() {
           <a href="#skills">Skills</a>
           <a href="#contact">Contact</a>
           <Link to="/" className="plain__cockpit">
-            Enter the cockpit →
+            {lore.plain.enterCockpit}
           </Link>
         </nav>
       </header>
@@ -98,8 +98,9 @@ export function PlainDossier() {
             <p key={p}>{p}</p>
           ))}
           <p className="plain__wanted">
-            <strong>Wanted for:</strong> {identity.wantedFor}. <strong>Reward:</strong>{' '}
-            {credits(identity.reward.amount)}. {identity.reward.terms}
+            <strong>{lore.labels.wantedFor}:</strong> {identity.wantedFor}.{' '}
+            <strong>{lore.labels.bountyValue}:</strong> {credits(identity.reward.amount)}.{' '}
+            {identity.reward.terms}
           </p>
         </section>
 
@@ -121,14 +122,14 @@ export function PlainDossier() {
               Key coursework: {education.courses.map((c) => `${c.code} ${c.title}`).join(' · ')}
             </p>
             <p className="plain__flavor">
-              Homeworld: {education.planet.name}, {education.planet.coords}.
+              {lore.plain.homeworld}: {education.planet.name}, {education.planet.coords}.
             </p>
           </article>
         </section>
 
         <section aria-labelledby="experience">
           <SectionHeading id="experience" k="experience" />
-          {[{ label: 'Internships & Research', list: internships }].map(({ label, list }) => (
+          {[{ label: lore.plain.internships, list: internships }].map(({ label, list }) => (
             <div key={label}>
               <h3 className="plain__subhead">{label}</h3>
               {list.map((c) => (
@@ -147,7 +148,7 @@ export function PlainDossier() {
                     ))}
                   </ul>
                   <p className="plain__flavor">
-                    Charge: {c.chargeTitle} ({c.planet.name})
+                    {lore.plain.charge}: {c.chargeTitle} ({c.planet.name})
                   </p>
                 </article>
               ))}
@@ -173,7 +174,7 @@ export function PlainDossier() {
                 ))}
               </ul>
               <p className="plain__flavor">
-                Rebel cell: {c.chargeTitle} ({c.planet.name})
+                {lore.plain.rebelCell}: {c.chargeTitle} ({c.planet.name})
               </p>
             </article>
           ))}
@@ -237,7 +238,7 @@ export function PlainDossier() {
           </p>
           <p>
             <a className="btn" href={resume.pdf} download>
-              Download resume (PDF)
+              {lore.plain.downloadResume}
             </a>{' '}
             <span className="plain__flavor">Updated {resume.updated}</span>
           </p>

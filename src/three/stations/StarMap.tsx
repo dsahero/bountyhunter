@@ -17,7 +17,8 @@ import type { Charge } from '../../content/schema';
 import { makeHoloMaterial, useHoloFade, HOLO_BLUE } from '../holo/holoMaterial';
 import { makeTextSprite } from '../holo/textSprite';
 import { seeded } from '../procedural/textures';
-import { Projector, useClickable, useFocusScale, useIsActive } from './common';
+import { HoloArrow, Projector, useClickable, useFocusScale, useIsActive } from './common';
+import { lore } from '../../content/lore';
 import { chronological, timelineLocal, TIMELINE } from '../../hub/timeline';
 import { orgLabel } from '../../content/derived';
 import type { Tier } from '../../lib/quality';
@@ -134,7 +135,7 @@ function Node({
   const year = charge.start.split(' ')[1] ?? '';
   const short = orgLabel(charge);
   const label = useMemo(
-    () => makeTextSprite(`${index + 1}. ${short} '${year.slice(2)}`, { height: 0.016 }),
+    () => makeTextSprite(`${short} '${year.slice(2)}`, { height: 0.016 }),
     [short, year, index],
   );
   const detail = useMemo(
@@ -215,9 +216,10 @@ function Backdrop({ count, active }: { count: number; active: boolean }) {
 }
 
 export function StarMap({ tier }: { tier: Tier }) {
+  // Off by default: the overhead projector only shows the map for Experience.
   const active = useIsActive('experience');
-  // Leadership takes over the overhead projector.
-  const hidden = useIsActive('leadership');
+  const isFirst = useHub((s) => s.charge === chronological()[0]?.id);
+  const toEducation = useMemo(() => () => useHub.getState().open('education'), []);
   const selectedId = useHub((s) => s.charge);
   const grow = useRef<THREE.Group>(null);
   useFocusScale(grow, active, TIMELINE.focusScale);
@@ -228,7 +230,7 @@ export function StarMap({ tier }: { tier: Tier }) {
 
   const [x, y, z] = ANCHORS.experience;
   return (
-    <group visible={!hidden}>
+    <group visible={active}>
       {/* Emitter in the ceiling, beaming down onto the map */}
       <Projector position={[x, 2.05, z + 0.05]} height={0.34} radius={0.24} active={active} flip />
       {/* Tilted to face the pilot's seat */}
@@ -244,6 +246,13 @@ export function StarMap({ tier }: { tier: Tier }) {
               visible={active ? 1 : 0.6}
             />
           ))}
+          <HoloArrow
+            label={`◂ ${lore.sections.education.real}`}
+            dir={-1}
+            visible={active && isFirst}
+            onSelect={toEducation}
+            position={[points[0]!.x - 0.07, points[0]!.y, points[0]!.z + 0.02]}
+          />
           {charges.map((c, i) => (
             <Node
               key={c.id}

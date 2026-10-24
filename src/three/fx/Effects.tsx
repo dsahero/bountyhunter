@@ -12,6 +12,7 @@ import {
   ChromaticAberration,
   EffectComposer,
   Noise,
+  Outline,
   Scanline,
   Vignette,
 } from '@react-three/postprocessing';
@@ -29,20 +30,45 @@ export function Effects() {
   const scan = <Scanline density={1.6} opacity={0.045} blendFunction={BlendFunction.OVERLAY} />;
   const grain = <Noise premultiply opacity={0.35} blendFunction={BlendFunction.SOFT_LIGHT} />;
   const vignette = <Vignette offset={0.28} darkness={0.65} />;
+  const outline = <HoverOutline />;
 
   return reduced ? (
     <EffectComposer multisampling={0}>
+      {outline}
       {bloom}
       {scan}
       {vignette}
     </EffectComposer>
   ) : (
     <EffectComposer multisampling={0}>
+      {outline}
       {bloom}
       {scan}
       <ChromaticAberration offset={FRINGE} radialModulation modulationOffset={0.35} />
       {grain}
       {vignette}
+    </EffectComposer>
+  );
+}
+
+/** Amber outline around whatever clickable thing the pointer is over. */
+function HoverOutline() {
+  return (
+    <Outline
+      visibleEdgeColor={0xffb347}
+      hiddenEdgeColor={0xffb347}
+      edgeStrength={8}
+      blur
+      xRay={false}
+    />
+  );
+}
+
+/** Low quality tier: just the hover outline, no other post-processing. */
+export function OutlineOnly() {
+  return (
+    <EffectComposer multisampling={0}>
+      <HoverOutline />
     </EffectComposer>
   );
 }

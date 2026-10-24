@@ -17,11 +17,11 @@ import { ContactPanel } from './panels/ContactPanel';
 import { LeadershipList } from './LeadershipList';
 import './panels/panels.css';
 
-const BODIES: Record<StationId, () => JSX.Element> = {
+const BODIES: Record<StationId, () => JSX.Element | null> = {
   about: AboutPanel,
   education: EducationPanel,
   experience: ExperiencePanel,
-  leadership: () => <LeadershipList inWorld={false} />,
+  leadership: LeadershipList,
   skills: SkillsPanel,
   projects: ProjectsPanel,
   resume: ResumePanel,
@@ -46,12 +46,12 @@ export function StationPanel({ flat = false }: { flat?: boolean }) {
   const Body = BODIES[station];
   const toConsole = () => {
     close();
-    document.getElementById(`console-${station}`)?.focus({ preventScroll: true });
+    document.getElementById(`console-station:${station}`)?.focus({ preventScroll: true });
   };
   const back = () => {
     useHub.getState().back();
     if (!useHub.getState().station)
-      document.getElementById(`console-${station}`)?.focus({ preventScroll: true });
+      document.getElementById(`console-station:${station}`)?.focus({ preventScroll: true });
   };
 
   return (
@@ -65,10 +65,10 @@ export function StationPanel({ flat = false }: { flat?: boolean }) {
         </div>
         <div className="panel__navs">
           <button className="panel__back" onClick={back}>
-            ◂ Back <kbd>⌫</kbd>
+            {lore.panel.back} <kbd>⌫</kbd>
           </button>
           <button className="panel__back" onClick={toConsole}>
-            Console <kbd>Esc</kbd>
+            {lore.panel.console} <kbd>Esc</kbd>
           </button>
         </div>
       </header>

@@ -6,6 +6,7 @@
  * `unlock()` is called from a click/keypress. All sounds route through one
  * master gain, which handles mute and volume.
  */
+import { MusicPlayer, type TrackName } from './music';
 
 export type Sfx =
   | 'click'
@@ -16,7 +17,18 @@ export type Sfx =
   | 'roar'
   | 'blaster'
   | 'clank'
-  | 'tick';
+  | 'tick'
+  | 'meow'
+  | 'voicemail'
+  | 'ring'
+  | 'holoOff'
+  | 'alarm'
+  | 'torpedo'
+  | 'powerDown'
+  | 'powerUp'
+  | 'chime'
+  | 'rumble'
+  | 'screech';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -41,6 +53,8 @@ class AudioEngine {
       this.noise = this.makeNoise();
       this.applyGain();
       if (this.wantAmbience) this.startAmbience();
+      this.player = new MusicPlayer(this.ctx, this.master);
+      if (this.wantMusic) this.player.play(...this.wantMusic);
     }
     void this.ctx.resume();
   }
@@ -196,6 +210,104 @@ class AudioEngine {
         o.frequency.exponentialRampToValueAtTime(160, end);
         break;
       }
+      case 'meow': {
+        // A cat: a rising-then-falling glide through a vowel-ish band-pass.
+        const { g, t, end } = this.env(0.22, 0.05, 0.55);
+        const bp = this.filter('bandpass', 1100, 3);
+        bp.connect(g);
+        const o = this.osc('sawtooth', 520, bp, t, end);
+        o.frequency.linearRampToValueAtTime(820, t + 0.18);
+        o.frequency.linearRampToValueAtTime(480, end);
+        bp.frequency.linearRampToValueAtTime(1600, t + 0.2);
+        bp.frequency.linearRampToValueAtTime(900, end);
+        break;
+      }
+      case 'voicemail': {
+        // Two short tones, then the long "after the tone" beep.
+        for (const [f, at, len] of [
+          [620, 0, 0.12],
+          [620, 0.2, 0.12],
+          [950, 0.6, 0.8],
+        ] as const) {
+          const { g, t, end } = this.env(0.12, 0.01, len, at);
+          this.osc('sine', f, g, t, end);
+        }
+        break;
+      }
+      case 'ring': {
+        for (let i = 0; i < 3; i++) {
+          const { g, t, end } = this.env(0.12, 0.01, 0.35, i * 0.6);
+          const lp = this.filter('lowpass', 1800);
+          lp.connect(g);
+          this.osc('square', 880, lp, t, end);
+          this.osc('square', 1175, lp, t, end);
+        }
+        break;
+      }
+      case 'holoOff':
+      case 'powerDown': {
+        const { g, t, end } = this.env(0.16, 0.01, name === 'powerDown' ? 1.2 : 0.4);
+        const o = this.osc('triangle', name === 'powerDown' ? 600 : 900, g, t, end);
+        o.frequency.exponentialRampToValueAtTime(name === 'powerDown' ? 40 : 160, end);
+        break;
+      }
+      case 'powerUp': {
+        const { g, t, end } = this.env(0.14, 0.4, 0.5);
+        const o = this.osc('triangle', 80, g, t, end);
+        o.frequency.exponentialRampToValueAtTime(900, end);
+        break;
+      }
+      case 'rumble': {
+        // A deep hull groan: low noise swelling and fading.
+        const { g, t, end } = this.env(0.6, 0.25, 1.6);
+        const lp = this.filter('lowpass', 90);
+        lp.connect(g);
+        this.noiseSource(lp, t, end);
+        const o = this.osc('sine', 38, g, t, end);
+        o.frequency.linearRampToValueAtTime(30, end);
+        break;
+      }
+      case 'screech': {
+        // Metal on metal: a narrow, wavering, falling squeal over grit.
+        const { g, t, end } = this.env(0.12, 0.05, 1.1);
+        const bp = this.filter('bandpass', 2400, 18);
+        bp.frequency.linearRampToValueAtTime(1500, end);
+        bp.connect(g);
+        this.noiseSource(bp, t, end);
+        const o = this.osc('sawtooth', 1900, bp, t, end);
+        for (let i = 0; i < 10; i++) o.frequency.setValueAtTime(1700 + Math.random() * 600, t + i * 0.1);
+        break;
+      }
+      case 'alarm': {
+        // A calm, low warning: two soft falling tones, like a ship's chime
+        // rather than a klaxon (rounded sine, gentle attack, lowpassed).
+        [0, 0.55].forEach((at, i) => {
+          const { g, t, end } = this.env(0.07, 0.12, 0.7, at);
+          const lp = this.filter('lowpass', 900);
+          lp.connect(g);
+          const o = this.osc('sine', i ? 294 : 392, lp, t, end);
+          o.frequency.exponentialRampToValueAtTime(i ? 262 : 349, end);
+        });
+        break;
+      }
+      case 'torpedo': {
+        const { g, t, end } = this.env(0.4, 0.05, 1.3);
+        const lp = this.filter('lowpass', 600);
+        lp.frequency.exponentialRampToValueAtTime(3000, t + 0.3);
+        lp.frequency.exponentialRampToValueAtTime(200, end);
+        lp.connect(g);
+        this.noiseSource(lp, t, end);
+        const o = this.osc('sine', 220, g, t, end);
+        o.frequency.exponentialRampToValueAtTime(60, end);
+        break;
+      }
+      case 'chime': {
+        [660, 880, 1320].forEach((f, i) => {
+          const { g, t, end } = this.env(0.1, 0.01, 0.6, i * 0.12);
+          this.osc('sine', f, g, t, end);
+        });
+        break;
+      }
       case 'clank': {
         const { g, t, end } = this.env(0.4, 0.003, 0.3);
         const lp = this.filter('lowpass', 700);
@@ -273,6 +385,37 @@ class AudioEngine {
     this.wantAmbience = false;
     this.ambience?.stop();
     this.ambience = null;
+  }
+
+  /**
+   * Looping music from a file (see portfolio.site.audio), on a named channel,
+   * routed through the master gain so mute and volume apply. An empty url
+   * (or null) stops that channel.
+   */
+  loop(channel: string, url: string | null) {
+    const current = this.tracks.get(channel);
+    if (url && current?.src.endsWith(url)) return;
+    if (current) {
+      current.pause();
+      this.tracks.delete(channel);
+    }
+    if (!url || !this.ctx) return;
+    const el = new Audio(url);
+    el.loop = true;
+    el.crossOrigin = 'anonymous';
+    this.ctx.createMediaElementSource(el).connect(this.master!);
+    this.tracks.set(channel, el);
+    void el.play().catch(() => this.tracks.delete(channel));
+  }
+
+  private tracks = new Map<string, HTMLAudioElement>();
+  private player: MusicPlayer | null = null;
+  private wantMusic: [TrackName | null, string] | null = null;
+
+  /** Cross-fade the music to a track (placeholder synth unless `url` names a file). */
+  music(name: TrackName | null, url = '') {
+    this.wantMusic = [name, url];
+    this.player?.play(name, url);
   }
 }
 

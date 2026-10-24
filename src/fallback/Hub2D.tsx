@@ -17,13 +17,13 @@ export function Hub2D() {
     <section className="hub2d" aria-labelledby="hub2d-title">
       <header className="hub2d__top">
         <h1 id="hub2d-title" className="hud__title">
-          <span className="hud__kicker">Bounty Guild // Target</span>
+          <span className="hud__kicker">{lore.hud.kicker}</span>
           {portfolio.identity.name}
         </h1>
         <HudControls className="hud__controls" />
       </header>
-      <p className="hub2d__status">Low-power mode: 3D systems offline.</p>
-      <ConsoleUI mode="flat" />
+      <p className="hub2d__status">{lore.hud.lowPower}</p>
+      <ConsoleUI />
       <p className="hub2d__disclaimer">{lore.disclaimer}</p>
       <StationPanel flat />
     </section>

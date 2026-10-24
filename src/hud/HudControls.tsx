@@ -1,8 +1,9 @@
 /**
- * Always-available controls: sound toggle, replay, and the plain dossier
- * (the "no dead ends" escape hatch).
+ * Always-available controls: sound + volume, motion, replay, and the plain
+ * dossier (the "no dead ends" escape hatch). Labels come from portfolio.site.hud.
  */
 import { Link } from 'react-router-dom';
+import { lore } from '../content/lore';
 import { useExperience } from '../state/experience';
 import { useSettings } from '../state/settings';
 import { useReducedMotion } from '../lib/reducedMotion';
@@ -10,9 +11,10 @@ import { useReducedMotion } from '../lib/reducedMotion';
 export function HudControls({ className }: { className?: string }) {
   const replay = useExperience((s) => s.replay);
   const soundEnabled = useSettings((s) => s.soundEnabled);
-  const setSettings = useSettings((s) => s.set);
   const volume = useSettings((s) => s.volume);
+  const setSettings = useSettings((s) => s.set);
   const reduced = useReducedMotion();
+  const h = lore.hud;
 
   return (
     <div className={className}>
@@ -21,7 +23,7 @@ export function HudControls({ className }: { className?: string }) {
         aria-pressed={soundEnabled}
         onClick={() => setSettings({ soundEnabled: !soundEnabled })}
       >
-        Sound: {soundEnabled ? 'on' : 'off'}
+        {h.sound}: {soundEnabled ? h.on : h.off}
       </button>
       {soundEnabled && (
         <input
@@ -31,7 +33,7 @@ export function HudControls({ className }: { className?: string }) {
           max={1}
           step={0.05}
           value={volume}
-          aria-label="Volume"
+          aria-label={h.volume}
           onChange={(e) => setSettings({ volume: Number(e.target.value) })}
         />
       )}
@@ -40,13 +42,13 @@ export function HudControls({ className }: { className?: string }) {
         aria-pressed={!reduced}
         onClick={() => setSettings({ reducedMotion: reduced ? 'off' : 'on' })}
       >
-        Motion: {reduced ? 'reduced' : 'full'}
+        {h.motion}: {reduced ? h.motionReduced : h.motionFull}
       </button>
       <button className="btn btn--ghost" onClick={replay}>
-        Replay intro
+        {h.replay}
       </button>
       <Link className="btn btn--ghost" to="/dossier">
-        Plain dossier
+        {h.plainDossier}
       </Link>
     </div>
   );

@@ -10,28 +10,28 @@
  *   Behind    doorway to the cargo hold, with propaganda posters
  *   Ceiling   maintenance duct + grate (the intro camera enters here)
  */
-import { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Html, RoundedBox, Sparkles } from '@react-three/drei';
+import { useEffect, useMemo, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
-import {
-  CONSOLE,
-  DUCT,
-  HELMET_ON_SHELF,
-  HTML_SCALE,
-  SIDE_TOP,
-  type Vec3,
-} from '../../../hub/layout';
+import { CONSOLE, DUCT, HELMET_ON_SHELF, SIDE_TOP, type Vec3 } from '../../../hub/layout';
 import { portfolio } from '../../../content/portfolio';
-import { ConsoleUI } from '../../../hub/ConsoleUI';
+import { lore } from '../../../content/lore';
+import { fillTokens } from '../../../content/derived';
+import { ConsoleScreen } from '../../ui/ConsoleScreen';
+import { HoloCat } from '../../stations/HoloCat';
+import { useHub } from '../../../state/hub';
 import { Beam } from '../../procedural/Beam';
-import { consoleTexture } from '../../procedural/textures';
+import { brushedMetalTexture, consoleTexture, diamondPlateTexture } from '../../procedural/textures';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { CabinLight, cabinLevel } from './cabinLight';
+import { DistressHologram, EmergencyLights, Guitar, LEFT_PAD_TOP, Tchotchkes, WeaponButtons, WeaponShots } from './Props';
+import { useClickable } from '../../stations/common';
 import { makeScreenTexture } from '../../procedural/screens';
 import { Helmet } from './Helmet';
 import { ButtonPanel } from './ButtonPanel';
 import { Duct } from './Duct';
 import { Droid } from './Droid';
-import { useReducedMotion } from '../../../lib/reducedMotion';
 import { WantedHologram } from '../../stations/WantedHologram';
 import { StarMap } from '../../stations/StarMap';
 import { LeadershipHologram } from '../../stations/LeadershipHologram';
@@ -41,6 +41,65 @@ import { PropagandaWall } from '../../stations/PropagandaWall';
 import { useStationClick } from '../../stations/common';
 import type { Tier } from '../../../lib/quality';
 
+/**
+ * A local reflection environment (three's RoomEnvironment through PMREM, no
+ * network), so the metal surfaces have something to shine with.
+ */
+function RoomEnv({ intensity }: { intensity: number }) {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const env = useMemo(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const texture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+    return texture;
+  }, [gl]);
+  useEffect(() => {
+    const before = scene.environment;
+    scene.environment = env;
+    return () => {
+      scene.environment = before;
+    };
+  }, [env, scene]);
+  useFrame(({ clock }) => {
+    scene.environmentIntensity = intensity * cabinLevel(clock.elapsedTime);
+  });
+  return null;
+}
+
+function CabinAmbient({ intensity }: { intensity: number }) {
+  const light = useRef<THREE.AmbientLight>(null);
+  useFrame(({ clock }) => {
+    if (light.current) light.current.intensity = intensity * cabinLevel(clock.elapsedTime);
+  });
+  return <ambientLight ref={light} intensity={intensity} color="#8090a0" />;
+}
+
+/** Your helmet on the shelf: click it to take a look (it turns on the spot). */
+function ShelfHelmet() {
+  const spin = useRef<THREE.Group>(null);
+  const inspecting = useHub((s) => s.inspect === 'helmet');
+  const click = useClickable(useMemo(() => () => useHub.getState().inspectItem('helmet'), []));
+  useFrame((_, dt) => {
+    if (!spin.current) return;
+    if (inspecting) spin.current.rotation.y += dt * 0.9;
+    else
+      spin.current.rotation.y = THREE.MathUtils.damp(
+        spin.current.rotation.y,
+        Math.round(spin.current.rotation.y / (Math.PI * 2)) * Math.PI * 2,
+        3,
+        dt,
+      );
+  });
+  return (
+    <group position={HELMET_ON_SHELF.position} rotation-y={HELMET_ON_SHELF.rotationY} {...click}>
+      <group ref={spin}>
+        <Helmet />
+      </group>
+    </group>
+  );
+}
+
 function useCockpitMaterials() {
   return useMemo(() => {
     const map = consoleTexture();
@@ -48,10 +107,22 @@ function useCockpitMaterials() {
       panel: new THREE.MeshStandardMaterial({
         map,
         color: '#9aa0a8',
-        metalness: 0.3,
-        roughness: 0.75,
+        metalness: 0.75,
+        roughness: 0.42,
       }),
-      frame: new THREE.MeshStandardMaterial({ color: '#26292d', metalness: 0.3, roughness: 0.75 }),
+      frame: new THREE.MeshStandardMaterial({ color: '#2e3237', metalness: 0.85, roughness: 0.38 }),
+      shiny: new THREE.MeshStandardMaterial({
+        map: brushedMetalTexture(),
+        color: '#c9cfd6',
+        metalness: 0.9,
+        roughness: 0.28,
+      }),
+      floor: new THREE.MeshStandardMaterial({
+        map: diamondPlateTexture(),
+        color: '#b0b5bb',
+        metalness: 0.8,
+        roughness: 0.45,
+      }),
       trim: new THREE.MeshStandardMaterial({ color: '#6e1f2c', metalness: 0.3, roughness: 0.6 }),
       seat: new THREE.MeshStandardMaterial({ color: '#3b2a22', roughness: 0.85 }),
     };
@@ -151,21 +222,11 @@ function Roof({ mat }: { mat: THREE.Material }) {
   );
 }
 
-/** The main computer: a big laid-back screen showing the dossier menu. */
-function MainComputer({ mats, showUI }: { mats: Mats; showUI: boolean }) {
-  // HTML ignores 3D depth (it would show through the duct walls in the intro),
-  // so until the hub the screen shows a painted texture instead.
-  const incoming = useMemo(
-    () =>
-      makeScreenTexture({
-        lines: ['BOUNTY GUILD // CONTRACT TERMINAL', '', 'INCOMING CONTRACT...'],
-        readout: 'grid',
-        width: 650,
-        height: 360,
-        seed: 9,
-      }),
-    [],
-  );
+/**
+ * The main computer: a big laid-back screen. Its UI is a canvas texture on the
+ * screen mesh (ConsoleScreen), so it's welded to the model and never drifts.
+ */
+function MainComputer({ mats }: { mats: Mats }) {
   return (
     <>
       <group position={CONSOLE.center} rotation-x={CONSOLE.tilt}>
@@ -178,66 +239,46 @@ function MainComputer({ mats, showUI }: { mats: Mats; showUI: boolean }) {
         <mesh position={[0, -0.44, 0]} material={mats.trim}>
           <boxGeometry args={[1.42, 0.03, 0.04]} />
         </mesh>
-        <mesh position={[0, 0, 0.001]}>
-          <planeGeometry args={[CONSOLE.width, CONSOLE.height]} />
-          <meshBasicMaterial
-            color={showUI ? '#03121a' : '#ffffff'}
-            map={showUI ? null : incoming}
-            toneMapped={false}
-          />
-        </mesh>
-        {showUI && (
-          <Html
-            transform
-            position={[0, 0, 0.004]}
-            distanceFactor={HTML_SCALE * 400}
-            zIndexRange={[10, 0]}
-            className="console-html"
-          >
-            <ConsoleUI mode="world" />
-          </Html>
-        )}
+        <ConsoleScreen />
       </group>
       {/* Skirt under the console; leaves knee room for the pilot */}
       <mesh position={[0, 0.32, -0.92]} material={mats.panel}>
         <boxGeometry args={[1.52, 0.64, 0.1]} />
       </mesh>
-      <pointLight position={[0, 1.05, -0.35]} color="#5fd4ff" intensity={0.9} distance={1.6} />
+      <CabinLight position={[0, 1.05, -0.35]} color="#5fd4ff" intensity={0.9} distance={1.6} />
     </>
   );
 }
 
 function SideConsoles({ mats }: { mats: Mats }) {
-  const { identity, charges } = portfolio;
+  const { charges } = portfolio;
   const screens = useMemo(
     () => ({
       warrant: makeScreenTexture({
-        lines: [
-          'WARRANT // BOUNTY GUILD',
-          `CHARGES ON FILE: ${charges.length}`,
-          'STATUS: AT LARGE',
-        ],
+        lines: lore.screens.warrant.map((t) =>
+          fillTokens(t).replace('{CHARGES}', String(charges.length)),
+        ),
         color: '#ff8a70',
         background: '#1c0705',
         readout: 'bars',
         seed: 2,
       }),
       comms: makeScreenTexture({
-        lines: ['COMMS // STANDBY', 'FREQ 121.5', 'REPORT SIGHTINGS'],
+        lines: lore.screens.comms.map(fillTokens),
         color: '#ffb347',
         background: '#1a0d03',
         readout: 'wave',
         seed: 3,
       }),
       datapad: makeScreenTexture({
-        lines: ['INTEL FILE', identity.name.toUpperCase(), 'RESUME // PDF'],
+        lines: lore.screens.datapad.map(fillTokens),
         readout: 'grid',
         width: 384,
         height: 256,
         seed: 4,
       }),
     }),
-    [identity.name, charges.length],
+    [charges.length],
   );
   const experience = useStationClick('experience');
   const contact = useStationClick('contact');
@@ -251,7 +292,7 @@ function SideConsoles({ mats }: { mats: Mats }) {
           args={[0.5, SIDE_TOP, 1.2]}
           radius={0.04}
           position={[1.05 * side, SIDE_TOP / 2, -0.3]}
-          material={mats.panel}
+          material={mats.shiny}
         />
       ))}
       {/* Left: warrant screen, datapad, controls */}
@@ -274,7 +315,7 @@ function SideConsoles({ mats }: { mats: Mats }) {
         />
       </group>
       <ButtonPanel
-        position={[-1.04, SIDE_TOP, 0.12]}
+        position={[-1.04, LEFT_PAD_TOP, 0.12]}
         width={0.38}
         depth={0.28}
         cols={8}
@@ -288,14 +329,6 @@ function SideConsoles({ mats }: { mats: Mats }) {
         texture={screens.comms}
         mats={mats}
         onClick={contact}
-      />
-      <ButtonPanel
-        position={[1.04, SIDE_TOP, 0.24]}
-        width={0.36}
-        depth={0.1}
-        cols={9}
-        rows={2}
-        seed={12}
       />
     </>
   );
@@ -315,7 +348,7 @@ function CargoHold({ mats }: { mats: Mats }) {
   ];
   return (
     <group>
-      <mesh position={[0, -0.02, 2.02]} material={mats.frame}>
+      <mesh position={[0, -0.02, 2.02]} material={mats.floor}>
         <boxGeometry args={[2.4, 0.04, 2.0]} />
       </mesh>
       {[-1, 1].map((side) => (
@@ -338,29 +371,24 @@ function CargoHold({ mats }: { mats: Mats }) {
   );
 }
 
-export function Cockpit({
-  tier,
-  showHelmet,
-  showConsoleUI,
-}: {
-  tier: Tier;
-  showHelmet: boolean;
-  showConsoleUI: boolean;
-}) {
+export function Cockpit({ tier, showHelmet }: { tier: Tier; showHelmet: boolean }) {
   const mats = useCockpitMaterials();
-  const reduced = useReducedMotion();
+  const catCall = useHub((s) => s.call?.kind === 'cat' && s.call.connected);
+  const holosOff = useHub((s) => s.holosOff);
 
   return (
     <group>
       {/* ---------- Lighting ---------- */}
-      <ambientLight intensity={0.35} color="#8090a0" />
-      <pointLight position={[0, 0.45, -0.3]} color="#ffa040" intensity={2.2} distance={2.4} />
-      <pointLight position={[0, 1.75, 1.8]} color="#ffb060" intensity={5} distance={4.5} />
-      <pointLight position={[-1.0, 1.4, -0.4]} color="#ff7a55" intensity={0.8} distance={1.4} />
-      <pointLight position={[1.0, 1.4, -0.4]} color="#5fd4ff" intensity={0.8} distance={1.4} />
+      <RoomEnv intensity={0.35} />
+      <CabinAmbient intensity={0.35} />
+      <CabinLight position={[0, 0.45, -0.3]} color="#ffa040" intensity={2.2} distance={2.4} />
+      <CabinLight position={[0, 1.75, 1.8]} color="#ffb060" intensity={5} distance={4.5} />
+      <CabinLight position={[-1.0, 1.4, -0.4]} color="#ff7a55" intensity={0.8} distance={1.4} />
+      <CabinLight position={[1.0, 1.4, -0.4]} color="#5fd4ff" intensity={0.8} distance={1.4} />
+      <EmergencyLights />
 
       {/* ---------- Shell ---------- */}
-      <mesh position={[0, -0.025, 0.2]} material={mats.frame}>
+      <mesh position={[0, -0.025, 0.2]} material={mats.floor}>
         <boxGeometry args={[2.8, 0.05, 3.2]} />
       </mesh>
       {[-1, 1].map((side) => (
@@ -373,7 +401,7 @@ export function Cockpit({
       <Duct material={mats.frame} />
 
       {/* ---------- Forward ---------- */}
-      <MainComputer mats={mats} showUI={showConsoleUI} />
+      <MainComputer mats={mats} />
 
       {/* ---------- Overhead switch panel (keys face down toward the pilot) ---------- */}
       <group position={[0, 1.97, -0.2]} rotation-x={-0.3}>
@@ -381,7 +409,7 @@ export function Cockpit({
           <boxGeometry args={[1.1, 0.06, 0.62]} />
         </mesh>
         <ButtonPanel
-          position={[0, -0.03, 0]}
+          position={[0, -0.034, 0]}
           rotation-x={Math.PI}
           width={1.0}
           depth={0.55}
@@ -391,7 +419,11 @@ export function Cockpit({
         />
       </group>
 
+      <WeaponButtons />
+      <WeaponShots />
+
       <SideConsoles mats={mats} />
+      <Tchotchkes />
 
       {/* ---------- Pilot seat (low back: the pilot can see over it) ---------- */}
       <group position={[0, 0, 0.35]}>
@@ -425,30 +457,25 @@ export function Cockpit({
       <CargoHold mats={mats} />
 
       {/* ---------- Stations ---------- */}
-      <WantedHologram />
-      <StarMap tier={tier} />
-      <LeadershipHologram />
-      <HomeworldHologram />
-      <AssociatesProjector />
+      {/* Holo off powers every hologram down until you turn them back on (or open one) */}
+      {!holosOff && (
+        <>
+          <WantedHologram />
+          <StarMap tier={tier} />
+          <LeadershipHologram />
+          {catCall && <HoloCat />}
+          <HomeworldHologram />
+          <AssociatesProjector />
+        </>
+      )}
+      <DistressHologram />
+      <Guitar />
       <PropagandaWall />
 
       {/* ---------- Ambient life ---------- */}
       <Droid />
-      {!reduced && (
-        <Sparkles
-          count={tier === 'high' ? 60 : 25}
-          scale={[2.4, 1.6, 2.6]}
-          position={[0, 1.2, 0]}
-          size={1.2}
-          speed={0.12}
-          opacity={0.35}
-          color="#ffd9a8"
-        />
-      )}
 
-      {showHelmet && (
-        <Helmet position={HELMET_ON_SHELF.position} rotation-y={HELMET_ON_SHELF.rotationY} />
-      )}
+      {showHelmet && <ShelfHelmet />}
     </group>
   );
 }

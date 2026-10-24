@@ -9,17 +9,12 @@ import * as THREE from 'three';
 import { useClickable } from '../../stations/common';
 import { cue, caption } from '../../../audio/cues';
 import { useReducedMotion } from '../../../lib/reducedMotion';
+import { lore } from '../../../content/lore';
 
 const HOME = new THREE.Vector3(0.62, 1.3, -0.62);
 const EYE_IDLE = new THREE.Color('#ff5a3c');
 
-const HINTS = [
-  'K-0D3: Bweep! Drag to look around. Arrow keys and Enter work the console.',
-  "K-0D3: Your target's record is on the star map overhead. Look up!",
-  'K-0D3: Rebel propaganda is pasted up in the cargo hold, behind you.',
-  'K-0D3: Click any hologram or screen to open it.',
-  'K-0D3: Known associates on the projector to your right.',
-];
+const HINTS = lore.droidHints;
 
 export function Droid() {
   const root = useRef<THREE.Group>(null);

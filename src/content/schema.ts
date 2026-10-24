@@ -25,6 +25,8 @@ export const identitySchema = z.object({
   tagline: nonEmpty,
   /** Path under /public, or null to use the generated silhouette portrait. */
   portrait: z.string().startsWith('/').nullable(),
+  /** Optional 3D scan (.glb under /public) shown as the wanted hologram. */
+  scanModel: z.string().startsWith('/').nullable(),
   bio: z.array(nonEmpty).min(1),
   /** "Known traits" revealed by the dossier scanner. */
   traits: z.array(z.object({ label: nonEmpty, value: nonEmpty })).min(1),
@@ -130,14 +132,237 @@ export const contactSchema = z.object({
   other: z.array(linkSchema),
 });
 
+// ---------------------------------------------------------------------------
+// Site copy (portfolio.site): all non-personal text on the site.
+// ---------------------------------------------------------------------------
+const lines = z.array(nonEmpty).min(1);
+const section = z.object({ real: nonEmpty, lore: nonEmpty });
+
+export const SECTION_KEYS = [
+  'about',
+  'education',
+  'experience',
+  'leadership',
+  'projects',
+  'skills',
+  'resume',
+  'contact',
+] as const;
+export type SectionKey = (typeof SECTION_KEYS)[number];
+
+const propText = z.object({ label: nonEmpty, blurb: nonEmpty });
+
+export const siteSchema = z.object({
+  gate: z.object({
+    kicker: nonEmpty,
+    title: nonEmpty,
+    subtitle: nonEmpty,
+    enterWithSound: nonEmpty,
+    enterSilently: nonEmpty,
+    reducedMotionOn: nonEmpty,
+    reducedMotionOff: nonEmpty,
+    useReducedMotion: nonEmpty,
+    useFullMotion: nonEmpty,
+  }),
+  titleCard: nonEmpty,
+  crawl: z.object({
+    logo: lines,
+    episode: nonEmpty,
+    title: nonEmpty,
+    paragraphs: lines,
+    continue: nonEmpty,
+  }),
+  contract: lines,
+  sections: z.object({
+    about: section,
+    education: section,
+    experience: section,
+    leadership: section,
+    projects: section,
+    skills: section,
+    resume: section,
+    contact: section,
+  }),
+  hud: z.object({
+    kicker: nonEmpty,
+    sound: nonEmpty,
+    on: nonEmpty,
+    off: nonEmpty,
+    volume: nonEmpty,
+    motion: nonEmpty,
+    motionFull: nonEmpty,
+    motionReduced: nonEmpty,
+    replay: nonEmpty,
+    plainDossier: nonEmpty,
+    skipIntro: nonEmpty,
+    lowPower: nonEmpty,
+  }),
+  console: z.object({
+    header: nonEmpty,
+    status: nonEmpty,
+    incoming: nonEmpty,
+    files: nonEmpty,
+    wanted: nonEmpty,
+    call: nonEmpty,
+    holoOff: nonEmpty,
+    holoOn: nonEmpty,
+    contactsTitle: nonEmpty,
+    hangUp: nonEmpty,
+    fireBlaster: nonEmpty,
+    fireTorpedo: nonEmpty,
+    /** Screen-reader list of the clickable things in the cockpit. */
+    objects: nonEmpty,
+    footer: nonEmpty,
+  }),
+  panel: z.object({ back: nonEmpty, console: nonEmpty }),
+  labels: z.object({
+    knownTraits: nonEmpty,
+    wantedFor: nonEmpty,
+    lastSeen: nonEmpty,
+    academyRecord: nonEmpty,
+    school: nonEmpty,
+    degree: nonEmpty,
+    dates: nonEmpty,
+    gpa: nonEmpty,
+    honors: nonEmpty,
+    moons: nonEmpty,
+    next: nonEmpty,
+    evidence: nonEmpty,
+    severity: nonEmpty,
+    internshipKind: nonEmpty,
+    leadershipKind: nonEmpty,
+    experienceHint: nonEmpty,
+    association: nonEmpty,
+    associationLevels: z.array(z.string()).length(6),
+    /** Plain-English skill levels for the plain dossier and resume (index 1-5). */
+    proficiencyLevels: z.array(z.string()).length(6),
+    servedWith: nonEmpty,
+    jointOperations: nonEmpty,
+    postersIntro: nonEmpty,
+    allPosters: nonEmpty,
+    transmission: nonEmpty,
+    encrypted: nonEmpty,
+    encryptedTitle: nonEmpty,
+    encryptedBody: nonEmpty,
+    classified: nonEmpty,
+    associatesInvolved: nonEmpty,
+    role: nonEmpty,
+    bountyValue: nonEmpty,
+    credits: nonEmpty,
+    contactTag: nonEmpty,
+    contactLead: nonEmpty,
+    email: nonEmpty,
+    github: nonEmpty,
+    linkedin: nonEmpty,
+    yourName: nonEmpty,
+    message: nonEmpty,
+    transmit: nonEmpty,
+    transmitNote: nonEmpty,
+    bountyClaimed: nonEmpty,
+    downloadPdf: nonEmpty,
+    plainText: nonEmpty,
+    updated: nonEmpty,
+    resumeSections: z.object({
+      education: nonEmpty,
+      experience: nonEmpty,
+      leadership: nonEmpty,
+      projects: nonEmpty,
+      skills: nonEmpty,
+    }),
+  }),
+  screens: z.object({ warrant: lines, comms: lines, datapad: lines }),
+  holograms: z.object({ wanted: nonEmpty, currency: nonEmpty }),
+  droidHints: lines,
+  helmet: z.object({ label: nonEmpty, blurb: nonEmpty }),
+  contacts: z
+    .array(z.object({ name: nonEmpty, icon: nonEmpty, kind: z.enum(['voicemail', 'cat']) }))
+    .min(1),
+  voicemail: nonEmpty,
+  attack: z.object({
+    guitarTitle: nonEmpty,
+    guitarBlurb: nonEmpty,
+    caller: nonEmpty,
+    alert: nonEmpty,
+    terminalTitle: nonEmpty,
+    skipStage: nonEmpty,
+    shields: nonEmpty,
+    progress: nonEmpty,
+    games: z.object({
+      firewall: z.object({ title: nonEmpty, help: nonEmpty }),
+      typing: z.object({ title: nonEmpty, help: nonEmpty, words: z.array(nonEmpty).min(3) }),
+      cargo: z.object({ title: nonEmpty, help: nonEmpty }),
+    }),
+    won: nonEmpty,
+  }),
+  captions: z.object({
+    roar: nonEmpty,
+    ventOpen: nonEmpty,
+    grateOpen: nonEmpty,
+    boot: nonEmpty,
+    blaster: nonEmpty,
+    torpedo: nonEmpty,
+    ring: nonEmpty,
+    voicemail: nonEmpty,
+    meow: nonEmpty,
+    hangUp: nonEmpty,
+    alarm: nonEmpty,
+    lightsOut: nonEmpty,
+    lightsOn: nonEmpty,
+    win: nonEmpty,
+    helmet: nonEmpty,
+    holoOff: nonEmpty,
+    holoOn: nonEmpty,
+    pickUp: nonEmpty,
+    rumble: nonEmpty,
+    screech: nonEmpty,
+  }),
+  /** Music files (paths under /public). Empty uses the built-in placeholder synth. */
+  audio: z.object({
+    crawl: z.string(),
+    arrival: z.string(),
+    cockpit: z.string(),
+    alarm: z.string(),
+  }),
+  picture: z.object({ caption: nonEmpty }),
+  /** Said when you press one of the cockpit's many unlabeled square buttons. */
+  buttonQuips: z.array(nonEmpty).min(1),
+  /** Flavor text for each tchotchke (click one to read it). */
+  props: z.object({
+    levers: propText,
+    switches: propText,
+    dice: propText,
+    mug: propText,
+    plant: propText,
+    bobble: propText,
+    picture: propText,
+  }),
+  plain: z.object({
+    kicker: nonEmpty,
+    skipToContent: nonEmpty,
+    enterCockpit: nonEmpty,
+    downloadResume: nonEmpty,
+    internships: nonEmpty,
+    rebelCell: nonEmpty,
+    charge: nonEmpty,
+    homeworld: nonEmpty,
+  }),
+  quips: z.object({ resumeDownload: nonEmpty, gpa: nonEmpty, contactSent: nonEmpty }),
+  disclaimer: nonEmpty,
+});
+
+export type Site = z.infer<typeof siteSchema>;
+
 export const portfolioSchema = z.object({
   identity: identitySchema,
   education: educationSchema,
   charges: z.array(chargeSchema).min(1),
   associates: z.array(associateSchema).min(1),
-  propaganda: z.array(propagandaSchema).min(1),
+  /** At most 10: one per poster slot in the cargo hold (hub/layout.ts POSTER_SLOTS). */
+  propaganda: z.array(propagandaSchema).min(1).max(10, 'Too many posters: add slots to POSTER_SLOTS in src/hub/layout.ts'),
   contact: contactSchema,
   resume: z.object({ pdf: z.string().startsWith('/'), updated: nonEmpty }),
+  /** All non-personal site copy (crawl, labels, captions, ...). */
+  site: siteSchema,
 });
 
 export type Portfolio = z.infer<typeof portfolioSchema>;

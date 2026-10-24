@@ -6,6 +6,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { seeded } from '../procedural/textures';
+import { Drift } from './Drift';
 
 function galaxyTexture(seed: number, tint: string) {
   const size = 256;
@@ -40,8 +41,8 @@ const PLANETS = [
 export function DistantWorlds() {
   const galaxies = useMemo(
     () => [
-      { tex: galaxyTexture(5, '#b8d4ff'), pos: [-150, 110, -200], scale: 90, rot: 0.4 },
-      { tex: galaxyTexture(9, '#ffc8e8'), pos: [230, 20, 120], scale: 60, rot: -0.8 },
+      { tex: galaxyTexture(5, '#b8d4ff'), pos: [-150, 110, -200] as const, scale: 90, rot: 0.4 },
+      { tex: galaxyTexture(9, '#ffc8e8'), pos: [230, 20, 120] as const, scale: 60, rot: -0.8 },
     ],
     [],
   );
@@ -49,7 +50,7 @@ export function DistantWorlds() {
   return (
     <>
       {PLANETS.map((p) => (
-        <group key={p.color} position={p.pos as unknown as [number, number, number]}>
+        <Drift key={p.color} intro={p.pos}>
           <mesh>
             <sphereGeometry args={[p.r, 32, 24]} />
             <meshStandardMaterial color={p.color} roughness={1} />
@@ -65,19 +66,21 @@ export function DistantWorlds() {
               />
             </mesh>
           )}
-        </group>
+        </Drift>
       ))}
       {galaxies.map((g, i) => (
-        <sprite key={i} position={g.pos as [number, number, number]} scale={[g.scale, g.scale, 1]}>
-          <spriteMaterial
-            map={g.tex}
-            rotation={g.rot}
-            transparent
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-            opacity={0.8}
-          />
-        </sprite>
+        <Drift key={i} intro={g.pos} clearance={g.scale * 2}>
+          <sprite scale={[g.scale, g.scale, 1]}>
+            <spriteMaterial
+              map={g.tex}
+              rotation={g.rot}
+              transparent
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+              opacity={0.8}
+            />
+          </sprite>
+        </Drift>
       ))}
     </>
   );

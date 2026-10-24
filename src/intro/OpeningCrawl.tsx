@@ -66,8 +66,8 @@ export function OpeningCrawl() {
         </>
       )}
       {showContinue && (
-        <button className="btn btn--ghost crawl__continue" onClick={advance}>
-          Continue ▸
+        <button className="btn btn--ghost crawl__continue" onClick={advance} autoFocus>
+          {lore.crawl.continue}
         </button>
       )}
     </section>

@@ -22,6 +22,7 @@ import { LoadingBar } from '../intro/LoadingBar';
 import { Starfield } from '../intro/Starfield';
 import { Hud } from '../hud/Hud';
 import { Captions } from '../hud/Captions';
+import { ContractOverlay } from '../hud/ContractOverlay';
 import { Hub2D } from '../fallback/Hub2D';
 import { useDocumentMeta } from './useDocumentMeta';
 import { useAudioSync } from '../audio/useAudioSync';
@@ -73,6 +74,7 @@ export function Cinematic() {
       )}
 
       {phase === 'crawl' && <OpeningCrawl />}
+      {phase === 'arrival' && <ContractOverlay />}
       {phase === 'hub' && (webgl ? <Hud /> : <Hub2D />)}
 
       {phase !== 'hub' && <IntroControls />}

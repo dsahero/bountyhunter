@@ -1,6 +1,7 @@
+import { lore } from '../../content/lore';
+import { orgLabel } from '../../content/derived';
 import { useHub } from '../../state/hub';
 import { chronological } from '../timeline';
-import { orgLabel } from '../../content/derived';
 
 export function ExperiencePanel() {
   const selectedId = useHub((s) => s.charge);
@@ -9,22 +10,22 @@ export function ExperiencePanel() {
     0,
     charges.findIndex((x) => x.id === selectedId),
   );
-  const c = charges[index]!;
+  const c = charges[index];
+  const l = lore.labels;
+  if (!c) return null;
 
   return (
     <>
-      <p className="panel__flavor">
-        The overhead star map traces each charge in order; select one to follow the lane.
-      </p>
-      <div className="tabs" role="group" aria-label="Charges">
-        {charges.map((x, i) => (
+      <StepNav index={index} charges={charges} />
+      <p className="panel__flavor">{l.experienceHint}</p>
+      <div className="tabs" role="group" aria-label={lore.sections.experience.real}>
+        {charges.map((x) => (
           <button
             key={x.id}
             className="tab"
             aria-pressed={x.id === c.id}
             onClick={() => useHub.getState().selectCharge(x.id)}
           >
-            {i + 1}. {x.kind === 'leadership' ? '⚑ ' : ''}
             {orgLabel(x)}
           </button>
         ))}
@@ -32,17 +33,17 @@ export function ExperiencePanel() {
 
       <article className="charge">
         <p className="charge__kind">
-          {c.kind === 'leadership' ? 'Leadership' : 'Internship / Research'}
+          {c.kind === 'leadership' ? l.leadershipKind : l.internshipKind}
         </p>
         <h3 className="charge__title">{c.chargeTitle}</h3>
         <p className="panel__lead">
           {c.role}, {c.org}
         </p>
         <p className="panel__flavor">
-          {c.start} – {c.end} · {c.realLocation} → {c.planet.name}
+          {c.start} – {c.end} · {c.realLocation}
         </p>
-        <div className="meter" aria-label={`Severity ${c.severity} of 5`}>
-          <span className="meter__label">Severity</span>
+        <div className="meter" aria-label={`${l.severity} ${c.severity} / 5`}>
+          <span className="meter__label">{l.severity}</span>
           {[1, 2, 3, 4, 5].map((n) => (
             <span
               key={n}
@@ -51,41 +52,36 @@ export function ExperiencePanel() {
             />
           ))}
         </div>
-        <h4 className="panel__sub">Evidence</h4>
+        <h4 className="panel__sub">{l.evidence}</h4>
         <ul className="evidence">
           {c.evidence.map((e) => (
             <li key={e}>{e}</li>
           ))}
         </ul>
       </article>
-      <StepNav index={index} charges={charges} />
     </>
   );
 }
 
-/** Back / Next through the timeline; Back from the first charge returns to Education. */
+/** Back / Next through the timeline; the ends lead to Education and Leadership. */
 function StepNav({ index, charges }: { index: number; charges: ReturnType<typeof chronological> }) {
   const prev = charges[index - 1];
   const next = charges[index + 1];
+  const hub = useHub.getState;
   return (
     <nav className="step-nav" aria-label="Timeline">
       <button
         className="btn btn--ghost"
-        onClick={() =>
-          prev ? useHub.getState().selectCharge(prev.id) : useHub.getState().open('education')
-        }
+        onClick={() => (prev ? hub().selectCharge(prev.id) : hub().open('education'))}
       >
-        ◂ {prev ? orgLabel(prev) : 'Education'}
+        ◂ {prev ? orgLabel(prev) : lore.sections.education.real}
       </button>
-      {next ? (
-        <button className="btn btn--holo" onClick={() => useHub.getState().selectCharge(next.id)}>
-          Next: {orgLabel(next)} ▸
-        </button>
-      ) : (
-        <button className="btn btn--holo" onClick={() => useHub.getState().open('leadership')}>
-          Next: Leadership ▸
-        </button>
-      )}
+      <button
+        className="btn btn--holo"
+        onClick={() => (next ? hub().selectCharge(next.id) : hub().open('leadership'))}
+      >
+        {lore.labels.next}: {next ? orgLabel(next) : lore.sections.leadership.real} ▸
+      </button>
     </nav>
   );
 }

@@ -5,21 +5,25 @@
  */
 import { useEffect } from 'react';
 import { portfolio } from '../content/portfolio';
+import { lore } from '../content/lore';
 import { useHub } from '../state/hub';
-import { usePortrait } from '../lib/useMediaQuery';
-import { ConsoleUI } from '../hub/ConsoleUI';
+import { ConsoleMirror, ObjectsMirror, focusConsole } from './ScreenMirror';
+import { LeadershipMirror } from '../hub/LeadershipList';
 import { StationPanel } from '../hub/StationPanel';
 import { HudControls } from './HudControls';
+import { InspectPanel } from './InspectPanel';
+import { useAttack } from '../hub/attack';
+import { skipStage, terminalKey, terminalKeyUp } from '../hub/games/terminal';
 import './hud.css';
 
 const FOCUSABLE = 'button:not([disabled]), a[href], input, textarea';
 
 /** Controls the arrow keys walk through: the open panel's, or the console's. */
 function navigables(): HTMLElement[] {
-  const station = useHub.getState().station;
-  const root = document.querySelector(
-    station === 'leadership' ? '.leadership--world' : station ? '.panel' : '.console',
-  );
+  const { station, inspect } = useHub.getState();
+  const root = station || inspect
+    ? document.querySelector(station === 'leadership' ? '.leadership-mirror' : '.panel')
+    : (document.querySelector('.console-mirror') ?? document.querySelector('.console'));
   return root ? Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)) : [];
 }
 
@@ -48,12 +52,26 @@ export function useHubHotkeys() {
         t instanceof HTMLTextAreaElement ||
         t instanceof HTMLSelectElement;
       const hub = useHub.getState();
+      // Under attack: the defense terminal gets the keyboard.
+      if (useAttack.getState().stage === 'terminal') {
+        if (e.key === 'Tab' || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (t instanceof HTMLButtonElement && e.key === 'Enter' && t.closest('.terminal-mirror')) return;
+        if (terminalKey(e.key, e.repeat)) e.preventDefault();
+        return;
+      }
+      if (hub.inspect && (e.key === 'Escape' || (e.key === 'Backspace' && !typing))) {
+        if (useAttack.getState().stage !== 'idle') return;
+        e.preventDefault();
+        hub.close();
+        focusConsole();
+        return;
+      }
       if (e.key === 'Escape') {
         const was = hub.station;
         if (was) {
           e.preventDefault();
           hub.close();
-          document.getElementById(`console-${was}`)?.focus({ preventScroll: true });
+          document.getElementById(`console-station:${was}`)?.focus({ preventScroll: true });
         }
         return;
       }
@@ -64,10 +82,13 @@ export function useHubHotkeys() {
         const was = hub.station;
         hub.back();
         if (!useHub.getState().station) {
-          document.getElementById(`console-${was}`)?.focus({ preventScroll: true });
+          document.getElementById(`console-station:${was}`)?.focus({ preventScroll: true });
         }
         return;
       }
+      const isArrow = e.key.startsWith('Arrow');
+      // Arrow keys bring the view back onto what you're working with (after a drag or zoom).
+      if (isArrow) hub.recenter();
       const list = navigables();
       if (!list.length) return;
       const index = list.indexOf(document.activeElement as HTMLElement);
@@ -106,26 +127,50 @@ export function useHubHotkeys() {
       const nextIndex = index < 0 ? 0 : (index + step + list.length) % list.length;
       focusControl(list[nextIndex]!);
     };
+    // Releases matter to the terminal games (held keys slide and soft-drop).
+    const onKeyUp = (e: KeyboardEvent) => terminalKeyUp(e.key);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
+    };
   }, []);
 }
 
 export function Hud() {
   useHubHotkeys();
-  const portrait = usePortrait();
   const station = useHub((s) => s.station);
+  const stage = useAttack((s) => s.stage);
+  const game = useAttack((s) => s.game);
+  const games = lore.attack.games;
+  const current = [games.firewall, games.typing, games.cargo][game];
 
   return (
     <div className="hud">
       <header className="hud__top">
         <h1 className="hud__title">
-          <span className="hud__kicker">Bounty Guild // Target</span>
+          <span className="hud__kicker">{lore.hud.kicker}</span>
           {portfolio.identity.name}
         </h1>
         <HudControls className="hud__controls" />
       </header>
-      {portrait && !station && <ConsoleUI mode="overlay" />}
+      {stage === 'terminal' ? (
+        <div className="terminal-mirror sr-only">
+          <p role="status">
+            {lore.attack.terminalTitle}. {current?.title}: {current?.help}
+          </p>
+          <button onClick={skipStage}>{lore.attack.skipStage}</button>
+        </div>
+      ) : (
+        <ConsoleMirror />
+      )}
+      {(stage === 'alert' || stage === 'terminal') && (
+        <div className="emergency-dim" aria-hidden="true" />
+      )}
+      <ObjectsMirror />
+      <InspectPanel />
+      {station === 'leadership' && <LeadershipMirror />}
       <StationPanel />
     </div>
   );
