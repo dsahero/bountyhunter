@@ -1,0 +1,35 @@
+/*
+ * Design tokens. Every color in the UI and (later) in shaders comes from here,
+ * so theming (helmet accent colors, etc.) is a matter of changing variables.
+ */
+:root {
+  /* Surfaces */
+  --bg: #05070a;
+  --bg-panel: rgba(6, 14, 22, 0.88);
+  --bg-raised: #0d141c;
+
+  /* Cockpit practical lights: warm */
+  --amber: #ffb347;
+  --amber-dim: #a8692a;
+
+  /* Holograms: cool */
+  --holo: #5fd4ff;
+  --holo-dim: #2b7a99;
+  --holo-glow: 0 0 6px rgba(95, 212, 255, 0.7), 0 0 18px rgba(95, 212, 255, 0.35);
+
+  /* Imperial stamps, warnings, wanted posters */
+  --imperial: #e0463a;
+  --crawl: #ffd54a;
+
+  /* Text */
+  --text: #e8eef2;
+  --text-muted: #9fb0bd; /* 7.9:1 on --bg */
+
+  /* Type */
+  --font-display: 'Orbitron', system-ui, sans-serif;
+  --font-ui: 'Rajdhani', system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', ui-monospace, monospace;
+
+  --radius: 6px;
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--amber);
+}

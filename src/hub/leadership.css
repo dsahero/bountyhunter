@@ -1,0 +1,175 @@
+/* Leadership: in the cockpit it's a hologram (sized in CSS px; 1px ≈ 0.92 mm overhead). */
+.leadership {
+  font-family: var(--font-ui);
+  color: var(--text);
+}
+
+.leadership--world {
+  width: 760px;
+  padding: 18px 22px 16px;
+  border: 1px solid rgba(95, 212, 255, 0.55);
+  border-radius: 8px;
+  background: repeating-linear-gradient(0deg, rgba(95, 212, 255, 0.05) 0 1px, transparent 1px 4px),
+    rgba(3, 18, 28, 0.82);
+  box-shadow:
+    0 0 40px rgba(95, 212, 255, 0.25),
+    inset 0 0 40px rgba(95, 212, 255, 0.08);
+  color: #d8f4ff;
+  animation: leadership-boot 0.6s ease-out;
+}
+
+@keyframes leadership-boot {
+  from {
+    opacity: 0;
+    transform: scaleY(0.05);
+    filter: brightness(3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leadership--world {
+    animation: none;
+  }
+}
+
+.leadership__header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(95, 212, 255, 0.3);
+}
+
+.leadership__title {
+  margin: 0;
+  font: 700 26px var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--holo);
+  text-shadow: var(--holo-glow);
+}
+
+.leadership__real {
+  margin: 0;
+  font: 14px var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.leadership__list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cell {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.cell__planet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+
+.cell__orb {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 35%),
+    radial-gradient(circle at 50% 50%, var(--planet), rgba(0, 0, 0, 0.85) 75%);
+  box-shadow:
+    0 0 24px var(--planet),
+    inset -10px -12px 24px rgba(0, 0, 0, 0.6);
+  animation: orb-spin 12s linear infinite;
+}
+
+@keyframes orb-spin {
+  to {
+    filter: hue-rotate(20deg);
+  }
+}
+
+.cell__planet-name {
+  font: 700 15px var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--holo);
+}
+
+.cell__where {
+  font: 13px var(--font-mono);
+  color: var(--text-muted);
+}
+
+.cell__role {
+  margin: 0 0 4px;
+  font: 700 21px/1.25 var(--font-display);
+  color: #fff;
+}
+
+.cell__meta {
+  margin: 0 0 6px;
+  font: 14px var(--font-mono);
+  color: var(--amber);
+}
+
+.cell__evidence {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.leadership__nav {
+  display: flex;
+  gap: 8px;
+}
+
+.leadership__btn {
+  padding: 6px 14px;
+  border: 1px solid var(--holo-dim);
+  border-radius: 4px;
+  background: rgba(95, 212, 255, 0.08);
+  color: var(--holo);
+  font: 15px var(--font-mono);
+  cursor: pointer;
+}
+
+.leadership__btn:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.leadership__btn kbd {
+  margin-left: 4px;
+  font: 12px var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* In a normal (2D) panel: smaller, stacked on narrow screens. */
+.leadership:not(.leadership--world) .cell {
+  grid-template-columns: 110px 1fr;
+}
+
+.leadership:not(.leadership--world) .cell__orb {
+  width: 70px;
+  height: 70px;
+}
+
+@media (max-width: 520px) {
+  .leadership:not(.leadership--world) .cell {
+    grid-template-columns: 1fr;
+  }
+}

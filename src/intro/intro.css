@@ -1,0 +1,282 @@
+.cinematic {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.starfield {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Intro controls (top right, every intro phase) ---------- */
+.intro-controls {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  z-index: 50;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ---------- Gate ---------- */
+.gate {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  background: radial-gradient(ellipse at center, #0b1620 0%, #000 70%);
+}
+
+.gate__kicker {
+  margin: 0;
+  font: 0.8rem var(--font-mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--imperial);
+  animation: blink 1.6s steps(2, start) infinite;
+}
+
+.gate__title {
+  margin: 0.5rem 0;
+  font: 900 clamp(2rem, 7vw, 4rem) / 1 var(--font-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--holo);
+  text-shadow: var(--holo-glow);
+}
+
+.gate__sub {
+  margin: 0 0 2rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.gate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.gate__motion {
+  max-width: 34rem;
+  margin: 1.5rem 0 0;
+  font: 0.85rem var(--font-mono);
+  color: var(--text-muted);
+}
+
+.gate__motion-toggle {
+  margin-left: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--amber);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* ---------- Loading bar ---------- */
+.loading {
+  width: min(320px, 80vw);
+  margin-top: 2.5rem;
+}
+
+.loading__track {
+  height: 4px;
+  background: #13202b;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loading__fill {
+  height: 100%;
+  background: var(--amber);
+  transform-origin: left;
+  transition: transform 0.3s ease-out;
+  box-shadow: 0 0 8px var(--amber);
+}
+
+.loading__text {
+  margin: 0.5rem 0 0;
+  font: 0.75rem var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ---------- Title card ---------- */
+.title-card {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.title-card__text {
+  max-width: 34ch;
+  margin: 0;
+  font: 400 clamp(1.2rem, 3.2vw, 2rem) / 1.5 var(--font-ui);
+  color: #4bd5ee;
+  opacity: 0;
+  /* 1.2s of black, fade in, hold, fade out. */
+  animation: title-card 6.5s ease-in-out 1.2s forwards;
+}
+
+@keyframes title-card {
+  0% {
+    opacity: 0;
+  }
+  20%,
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- Crawl ---------- */
+/* Transparent: the 3D starfield (or the 2D fallback) shows through. */
+.crawl {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  color: var(--crawl);
+  font-family: var(--font-ui);
+  pointer-events: none;
+  perspective: 600px;
+}
+
+/* 1. The wordmark: starts huge and recedes linearly in depth, like the film's logo. */
+.crawl__logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font: 900 clamp(3rem, 13vw, 10rem) / 0.95 var(--font-display);
+  letter-spacing: 0.06em;
+  color: transparent;
+  -webkit-text-stroke: 0.035em var(--crawl);
+  opacity: 0;
+  animation: crawl-logo 14s linear forwards;
+}
+
+@keyframes crawl-logo {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateZ(380px);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateZ(-9000px);
+  }
+}
+
+/* 2. The crawl: a tilted floor, hinged at the screen's bottom edge; the text slides up it. */
+.crawl__viewport {
+  position: absolute;
+  inset: 0;
+  /* Vanishing point = origin - perspective * cot(tilt), about 15% from the top,
+     so the text shrinks to a point on screen instead of sliding off the top. */
+  perspective: 400px;
+  perspective-origin: 50% 42%;
+}
+
+.crawl__floor {
+  --crawl-width: min(72vw, 54rem);
+  --floor-length: 9000px;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: var(--crawl-width);
+  height: var(--floor-length);
+  margin-left: calc(var(--crawl-width) / -2);
+  transform-origin: 50% 100%;
+  transform: rotateX(65deg);
+  overflow: hidden;
+}
+
+.crawl__text {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  font-size: clamp(1.3rem, 4.2vw, 3.6rem);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.03em;
+  text-align: justify;
+  animation: crawl 135s linear 6s forwards;
+}
+
+.crawl__text p {
+  margin: 0 0 1.1em;
+}
+
+.crawl__episode,
+.crawl__title {
+  text-align: center;
+}
+
+.crawl__episode {
+  margin: 0 !important;
+  letter-spacing: 0.12em;
+}
+
+.crawl__title {
+  margin: 0 0 0.9em;
+  font: 900 1.5em/1.1 var(--font-display);
+  letter-spacing: 0.08em;
+}
+
+/* Up the whole floor; by the far end the text is a speck at the vanishing point. */
+@keyframes crawl {
+  95% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(calc(-100% - var(--floor-length)));
+  }
+}
+
+.crawl__static {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 5rem 1.25rem 6rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.crawl__continue {
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  pointer-events: auto;
+}

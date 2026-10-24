@@ -1,0 +1,46 @@
+.hub2d {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: max(12px, env(safe-area-inset-top)) 12px 2rem;
+  background: radial-gradient(ellipse at 50% 120%, rgba(255, 179, 71, 0.16), transparent 60%),
+    radial-gradient(ellipse at 50% 0%, rgba(95, 212, 255, 0.1), transparent 55%), var(--bg);
+}
+
+.hub2d__top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.hub2d__status {
+  margin: 0;
+  font: 0.85rem var(--font-mono);
+  color: var(--text-muted);
+}
+
+.hub2d__disclaimer {
+  max-width: 720px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.console--flat {
+  width: min(650px, 100%);
+  min-height: 360px;
+  border: 1px solid var(--holo-dim);
+  border-radius: var(--radius);
+}
+
+@media (max-width: 520px) {
+  .console--flat .console__main {
+    grid-template-columns: 1fr;
+  }
+}
