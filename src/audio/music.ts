@@ -84,6 +84,70 @@ interface Playing {
   stop: () => void;
 }
 
+interface PooledFile {
+  el: HTMLAudioElement;
+  src: MediaElementAudioSourceNode;
+  unlocked: boolean;
+  /** Bumped on every start, so a stale fade-out's stop can't cut a restart. */
+  token: number;
+}
+
+/**
+ * One reused <audio> element per music file. Phones (iOS Safari especially)
+ * only let an element play from a timer if it already played once inside a
+ * tap, so `unlock()` runs from a gesture and starts each element silently
+ * (its source isn't connected to anything yet) to earn that permission.
+ */
+export class FilePool {
+  private files = new Map<string, PooledFile>();
+
+  constructor(private ctx: AudioContext) {}
+
+  private get(url: string) {
+    let f = this.files.get(url);
+    if (!f) {
+      const el = new Audio(url);
+      el.loop = true;
+      el.preload = 'auto';
+      el.crossOrigin = 'anonymous';
+      f = { el, src: this.ctx.createMediaElementSource(el), unlocked: false, token: 0 };
+      this.files.set(url, f);
+    }
+    return f;
+  }
+
+  /** Call from a user gesture. Safe to repeat: only elements not yet unlocked are tried. */
+  unlock(urls: string[]) {
+    for (const url of urls) {
+      const f = this.get(url);
+      if (f.unlocked) continue;
+      const token = f.token;
+      f.el
+        .play()
+        .then(() => {
+          f.unlocked = true;
+          if (f.token === token) f.el.pause(); // nobody started it meanwhile
+        })
+        .catch(() => undefined);
+    }
+  }
+
+  /** Play a file from the top into `out`; returns its stop. */
+  start(url: string, out: AudioNode) {
+    const f = this.get(url);
+    const token = ++f.token;
+    f.src.disconnect();
+    f.src.connect(out);
+    f.el.currentTime = 0;
+    void f.el.play().catch(() => undefined);
+    return () => {
+      if (f.token !== token) return;
+      f.el.pause();
+      f.src.disconnect();
+    };
+  }
+}
+
 /** Cross-fade length (seconds) unless a player asks for another. */
 const FADE = 2.5;
 
@@ -93,6 +157,7 @@ export class MusicPlayer {
   constructor(
     private ctx: AudioContext,
     private master: AudioNode,
+    private files: FilePool,
     private fade = FADE,
   ) {}
 
@@ -107,7 +172,7 @@ export class MusicPlayer {
     out.gain.setValueAtTime(0.0001, this.ctx.currentTime);
     out.gain.exponentialRampToValueAtTime(1, this.ctx.currentTime + this.fade);
     out.connect(this.master);
-    const stop = url ? this.playFile(url, out) : this.playSynth(synth!, out);
+    const stop = url ? this.files.start(url, out) : this.playSynth(synth!, out);
     this.current = { name, url, out, stop };
   }
 
@@ -120,15 +185,6 @@ export class MusicPlayer {
     c.out.gain.exponentialRampToValueAtTime(0.0001, t + this.fade);
     window.setTimeout(c.stop, this.fade * 1000 + 200);
     this.current = null;
-  }
-
-  private playFile(url: string, out: GainNode) {
-    const el = new Audio(url);
-    el.loop = true;
-    el.crossOrigin = 'anonymous';
-    this.ctx.createMediaElementSource(el).connect(out);
-    void el.play().catch(() => undefined);
-    return () => el.pause();
   }
 
   /** Loop a synth track with a look-ahead scheduler. */

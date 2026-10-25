@@ -6,7 +6,7 @@
  * `unlock()` is called from a click/keypress. All sounds route through one
  * master gain, which handles mute and volume.
  */
-import { MusicPlayer, type TrackName } from './music';
+import { FilePool, MusicPlayer, type TrackName } from './music';
 
 export type Sfx =
   | 'click'
@@ -53,13 +53,23 @@ class AudioEngine {
       this.noise = this.makeNoise();
       this.applyGain();
       if (this.wantAmbience) this.startAmbience();
-      this.player = new MusicPlayer(this.ctx, this.master);
-      this.alarmPlayer = new MusicPlayer(this.ctx, this.master, 0.05); // starts and stops at once
+      this.files = new FilePool(this.ctx);
+      this.player = new MusicPlayer(this.ctx, this.master, this.files);
+      this.alarmPlayer = new MusicPlayer(this.ctx, this.master, this.files, 0.05); // starts and stops at once
       if (this.wantMusic) this.player.play(...this.wantMusic);
       if (this.wantAlarm) this.alarmPlayer.play('alarm', this.wantAlarm);
     }
+    this.files?.unlock(this.musicFiles);
     void this.ctx.resume();
   }
+
+  /** The music files to unlock on the next gesture (phones block them otherwise). */
+  setMusicFiles(urls: string[]) {
+    this.musicFiles = urls.filter(Boolean);
+  }
+
+  private files: FilePool | null = null;
+  private musicFiles: string[] = [];
 
   get ready() {
     return !!this.ctx && this.ctx.state === 'running';

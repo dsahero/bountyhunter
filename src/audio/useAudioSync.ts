@@ -43,16 +43,15 @@ export function useAudioSync() {
   }, [stage]);
 
   useEffect(() => {
+    audio.setMusicFiles(Object.values(portfolio.site.audio));
+    // iOS only counts touchend/click as a gesture for audio, not pointerdown.
     const onGesture = (e: Event) => {
       if (useSettings.getState().soundEnabled) audio.unlock();
       const el = e.target as Element | null;
       if (e.type === 'pointerdown' && el?.closest('button, a')) audio.play('click');
     };
-    window.addEventListener('pointerdown', onGesture);
-    window.addEventListener('keydown', onGesture);
-    return () => {
-      window.removeEventListener('pointerdown', onGesture);
-      window.removeEventListener('keydown', onGesture);
-    };
+    const events = ['pointerdown', 'touchend', 'click', 'keydown'] as const;
+    events.forEach((e) => window.addEventListener(e, onGesture));
+    return () => events.forEach((e) => window.removeEventListener(e, onGesture));
   }, []);
 }
