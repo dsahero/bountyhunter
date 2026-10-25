@@ -242,6 +242,7 @@ export const Hunter = forwardRef<HunterHandle, JSX.IntrinsicElements['group']>(
     const m = useMaterials();
     const root = useRef<THREE.Group>(null);
     const hair = useMemo(() => ({ visible: true }), []);
+    const hairState = useRef({ applied: null as boolean | null, frames: 0 });
     // The modeled hunter (public/models/hunter.glb) replaces these primitives once loaded.
     useModeledParts(root, 'Hunter');
     const body = useRef<THREE.Group>(null);
@@ -297,11 +298,16 @@ export const Hunter = forwardRef<HunterHandle, JSX.IntrinsicElements['group']>(
     );
 
     useFrame(() => {
-      // Hair on/off (also catches modeled parts that load later).
-      root.current?.traverse((o) => {
-        const mat = (o as THREE.Mesh).material as THREE.Material | undefined;
-        if (mat && !Array.isArray(mat) && mat.name.startsWith('hair')) o.visible = hair.visible;
-      });
+      // Hair on/off: when it changes, and every half second or so for
+      // modeled parts that load later.
+      const h = hairState.current;
+      if (h.applied !== hair.visible || ++h.frames % 30 === 0) {
+        h.applied = hair.visible;
+        root.current?.traverse((o) => {
+          const mat = (o as THREE.Mesh).material as THREE.Material | undefined;
+          if (mat && !Array.isArray(mat) && mat.name.startsWith('hair')) o.visible = hair.visible;
+        });
+      }
       const parts = [
         body,
         spine,

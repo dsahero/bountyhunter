@@ -15,6 +15,7 @@ import { HoloArrow, Projector, useFocusScale, useIsActive, useStationClick } fro
 import { chronological } from '../../hub/timeline';
 import { orgLabel } from '../../content/derived';
 import { useHub } from '../../state/hub';
+import { useInView } from '../perf/ViewCull';
 
 const PLANET_R = 0.06;
 
@@ -25,6 +26,7 @@ export function HomeworldHologram() {
   const grow = useRef<THREE.Group>(null);
   const spin = useRef<THREE.Group>(null);
   const orbit = useRef<THREE.Group>(null);
+  const inView = useInView();
   useFocusScale(grow, active, 1.8);
 
   const mats = useMemo(
@@ -43,6 +45,7 @@ export function HomeworldHologram() {
   );
 
   useFrame((_, dt) => {
+    if (!inView.current) return; // off screen: nothing to animate
     if (spin.current) spin.current.rotation.y += dt * 0.35;
     if (orbit.current) orbit.current.rotation.y += dt * 0.25;
     for (const l of moonLabels)

@@ -23,8 +23,13 @@ const identitySchema = z.object({
   name: nonEmpty,
   alias: nonEmpty,
   tagline: nonEmpty,
-  /** Path under /public, or null to use the generated silhouette portrait. */
-  portrait: z.string().startsWith('/').nullable(),
+  /**
+   * Your photo: a path under /public or a web address (loaded live, so it
+   * follows your profile). Null shows a silhouette.
+   */
+  portrait: z.string().nullable(),
+  /** Tried if `portrait` can't be loaded (e.g. your GitHub avatar). */
+  portraitFallback: z.string().nullable(),
   /** Optional 3D scan (.glb under /public) shown as the wanted hologram. */
   scanModel: z.string().startsWith('/').nullable(),
   bio: z.array(nonEmpty).min(1),
@@ -378,7 +383,16 @@ const siteSchema = z.object({
   siteUrl: z.string(),
   /** Little goals for exploring the cockpit (the Achievements board). */
   achievements: z
-    .array(z.object({ id: nonEmpty, title: nonEmpty, description: nonEmpty, icon: nonEmpty }))
+    .array(
+      z.object({
+        id: nonEmpty,
+        title: nonEmpty,
+        description: nonEmpty,
+        icon: nonEmpty,
+        /** Shown instead while it's locked (a hint that doesn't spoil the surprise). */
+        locked: z.object({ title: nonEmpty, description: nonEmpty }).optional(),
+      }),
+    )
     .min(1),
   achievementsText: z.object({
     intro: nonEmpty,

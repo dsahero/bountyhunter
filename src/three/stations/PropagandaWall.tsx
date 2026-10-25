@@ -15,9 +15,10 @@ import { CARGO_DOOR, POSTER_SIZE, posterSlot } from '../../hub/layout';
 import type { Propaganda } from '../../content/schema';
 import { MEDIA_RECT, POSTER_PX, makePosterTexture } from './posters';
 import { useReducedMotion } from '../../lib/reducedMotion';
-import { CabinLight } from '../scenes/Cockpit/cabinLight';
 import { useClickable } from './common';
 import { isVideo } from '../../lib/media';
+import { useInView } from '../perf/ViewCull';
+import { StaticBatch } from '../perf/StaticBatch';
 
 type Placement = { position: readonly [number, number, number]; rotationY: number };
 
@@ -80,6 +81,7 @@ function Poster({ project, slot, index }: { project: Propaganda; slot: Placement
   const sweep = useMemo(sweepMaterial, []);
   const reduced = useReducedMotion();
   const sway = useRef<THREE.Group>(null);
+  const inView = useInView();
   const glow = useRef<THREE.MeshBasicMaterial>(null);
   const click = useClickable(
     useMemo(
@@ -90,6 +92,7 @@ function Poster({ project, slot, index }: { project: Propaganda; slot: Placement
     ),
   );
   useFrame(({ clock }, dt) => {
+    if (!inView.current) return; // off screen: nothing to animate
     const t = clock.elapsedTime + index * 1.7;
     if (glow.current)
       glow.current.opacity = THREE.MathUtils.damp(glow.current.opacity, selected ? 0.9 : 0, 6, dt);
@@ -164,7 +167,7 @@ function CargoDoor() {
     [],
   );
   return (
-    <group position={[x, y, z - 0.01]} rotation-y={Math.PI}>
+    <StaticBatch position={[x, y, z - 0.01]} rotation-y={Math.PI}>
       {/* Frame */}
       {[-1, 1].map((s) => (
         <mesh key={s} position={[(width / 2 + 0.05) * s, 0, 0.02]} material={mats.frame}>
@@ -205,7 +208,7 @@ function CargoDoor() {
       <mesh position={[width / 2 + 0.05, 0.04, 0.071]} material={mats.ok}>
         <boxGeometry args={[0.03, 0.025, 0.004]} />
       </mesh>
-    </group>
+    </StaticBatch>
   );
 }
 
@@ -216,7 +219,6 @@ export function PropagandaWall() {
       {posters.map((p, i) => (
         <Poster key={p.id} project={p} slot={posterSlot(i)} index={i} />
       ))}
-      <CabinLight position={[0, 1.9, 2.2]} color="#ffb060" intensity={5} distance={3.5} />
       <CargoDoor />
     </group>
   );

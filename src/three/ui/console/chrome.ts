@@ -41,12 +41,13 @@ export function footer(ctx: CanvasRenderingContext2D) {
   ctx.textAlign = 'left';
 }
 
-/** The wanted card, with a photo slot (grey square + silhouette until a portrait is set). */
+/** The wanted card, with your photo (or a grey square + silhouette until it loads). */
 export function wantedCard(
   ctx: CanvasRenderingContext2D,
   r: Region,
   hover: boolean,
   focus: boolean,
+  photo: HTMLImageElement | null = null,
 ) {
   const { identity } = portfolio;
   roundRect(ctx, r.x, r.y, r.w, r.h, 6);
@@ -69,15 +70,23 @@ export function wantedCard(
   const ps = 86;
   const px = cx - ps / 2;
   const py = r.y + 50;
-  ctx.fillStyle = '#9a9a9a';
-  ctx.fillRect(px, py, ps, ps);
-  ctx.fillStyle = '#6f6f6f';
-  ctx.beginPath();
-  ctx.arc(cx, py + ps * 0.38, ps * 0.18, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(cx, py + ps, ps * 0.34, ps * 0.3, 0, Math.PI, 0);
-  ctx.fill();
+  if (photo) {
+    // Center-crop the photo to the square slot.
+    const s = Math.min(photo.naturalWidth, photo.naturalHeight);
+    const sx = (photo.naturalWidth - s) / 2;
+    const sy = (photo.naturalHeight - s) / 2;
+    ctx.drawImage(photo, sx, sy, s, s, px, py, ps, ps);
+  } else {
+    ctx.fillStyle = '#9a9a9a';
+    ctx.fillRect(px, py, ps, ps);
+    ctx.fillStyle = '#6f6f6f';
+    ctx.beginPath();
+    ctx.arc(cx, py + ps * 0.38, ps * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx, py + ps, ps * 0.34, ps * 0.3, 0, Math.PI, 0);
+    ctx.fill();
+  }
   ctx.strokeStyle = '#5a4630';
   ctx.lineWidth = 2;
   ctx.strokeRect(px, py, ps, ps);

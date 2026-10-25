@@ -109,11 +109,15 @@ export const CARGO_DOOR = { position: [0, 0.98, BACK] as Vec3, width: 0.56, heig
 
 /** The cantina guitar, hanging on the cargo hold's starboard wall. */
 /**
- * Lying on the floor in the middle of the cargo hold, in front of the back
- * door and under its own spotlight: in plain view through the doorway, clear
- * of the walls and crates. Angled a little, as if set down in a hurry.
+ * On a stand in the cockpit's back-right corner, just behind the helmet
+ * shelf, facing the seat. Placed clear of the side console, the walls, and
+ * the bulkhead posters' lines of sight.
  */
-export const GUITAR = { position: [0, 0, 2.0] as Vec3, rotationY: Math.PI - 0.5 };
+const GUITAR_SPOT: Vec3 = [1.06, 0, 0.6];
+export const GUITAR = {
+  position: GUITAR_SPOT,
+  rotationY: Math.atan2(EYE[0] - GUITAR_SPOT[0], EYE[2] - GUITAR_SPOT[2]),
+};
 
 /**
  * The red/blue weapon buttons: a small plate hung on two struts from the

@@ -18,7 +18,8 @@
     "import:hunter": "node scripts/import-hunter.mjs",
     "sync:github": "node scripts/sync-github.mjs",
     "capture:media": "node scripts/capture-media.mjs",
-    "og:image": "node scripts/og-image.mjs"
+    "og:image": "node scripts/og-image.mjs",
+    "perf": "node scripts/perf-report.mjs"
   },
   "dependencies": {
     "@fontsource/orbitron": "^5.1.0",

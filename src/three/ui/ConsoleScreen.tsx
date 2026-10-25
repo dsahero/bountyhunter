@@ -9,6 +9,7 @@ import { CONSOLE } from '../../hub/layout';
 import { lore } from '../../content/lore';
 import { activateConsoleItem, consoleItems, menuPageCount } from '../../hub/consoleModel';
 import { useAchievements } from '../../state/achievements';
+import { usePortrait } from '../../lib/portrait';
 import { useConsoleUi } from '../../state/consoleUi';
 import { useHub } from '../../state/hub';
 import { useExperience } from '../../state/experience';
@@ -28,6 +29,7 @@ export function ConsoleScreen() {
   const call = useHub((s) => s.call);
   const holosOff = useHub((s) => s.holosOff);
   const page = useConsoleUi((s) => s.page);
+  const photo = usePortrait();
   const achieved = useAchievements((s) => s.unlocked.length);
   const items = useMemo(
     () => consoleItems(mode, !!call, holosOff, page),
@@ -59,7 +61,7 @@ export function ConsoleScreen() {
     } else if (mode === 'contacts') {
       regions = drawList(args, items, lore.console.contactsTitle, callName);
     } else {
-      regions = drawMenu(args, items, page % menuPageCount(), menuPageCount());
+      regions = drawMenu(args, items, page % menuPageCount(), menuPageCount(), photo);
     }
     footer(ctx);
     screenFinish(ctx, W, H);
@@ -72,7 +74,7 @@ export function ConsoleScreen() {
       height={H}
       worldWidth={CONSOLE.width}
       draw={draw}
-      version={`${phase}|${mode}|${callName}|${items.length}|${stage}|${gameIndex}|${holosOff}|${page}|${achieved}`}
+      version={`${phase}|${mode}|${callName}|${items.length}|${stage}|${gameIndex}|${holosOff}|${page}|${achieved}|${photo ? 1 : 0}`}
       animate={phase !== 'hub' || stage === 'terminal'}
       focusId={stage === 'terminal' ? null : focus}
       onActivate={stage === 'terminal' ? terminalClick : activateConsoleItem}

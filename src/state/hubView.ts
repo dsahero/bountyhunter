@@ -27,7 +27,7 @@ export const HUB_APPS: readonly HubApp[] = ['achievements', 'guestbook'];
 /** Where each inspectable object is (world points). */
 export const INSPECT_POINTS: Record<Inspectable, Vec3> = {
   helmet: HELMET_ON_SHELF.position,
-  guitar: [GUITAR.position[0], GUITAR.position[1] + 0.06, GUITAR.position[2]],
+  guitar: [GUITAR.position[0], GUITAR.position[1] + 0.6, GUITAR.position[2]],
   ...PROPS,
 };
 

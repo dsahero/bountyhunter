@@ -34,6 +34,21 @@ export function OpeningCrawl() {
     return () => window.clearTimeout(t);
   }, [reduced]);
 
+  // Enter continues from anywhere once Continue is showing (unless another
+  // control has focus, in which case Enter belongs to it).
+  useEffect(() => {
+    if (!showContinue) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || e.repeat) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest('button, a, input, textarea') && !t.closest('.crawl__continue')) return;
+      e.preventDefault();
+      advance();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showContinue, advance]);
+
   const body = (
     <>
       <p className="crawl__episode">{lore.crawl.episode}</p>

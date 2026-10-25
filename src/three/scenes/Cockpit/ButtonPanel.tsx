@@ -86,12 +86,18 @@ export function ButtonPanel({
     return { keys: m, blinkers };
   }, [width, depth, cols, rows, seed, gap]);
 
+  // Blinkers flip a few times a second; only send colors to the GPU when one does.
+  const lit = useMemo(() => new Map<number, boolean>(), []);
   useFrame(({ clock }) => {
+    let changed = false;
     for (const b of blinkers) {
       const on = Math.sin((clock.elapsedTime + b.offset) * b.rate * Math.PI) > 0;
+      if (lit.get(b.index) === on) continue;
+      lit.set(b.index, on);
       keys.setColorAt(b.index, on ? b.color : DIM);
+      changed = true;
     }
-    if (keys.instanceColor) keys.instanceColor.needsUpdate = true;
+    if (changed && keys.instanceColor) keys.instanceColor.needsUpdate = true;
   });
 
   // Every key is pressable; none of them is labeled.

@@ -90,14 +90,14 @@ class AudioEngine {
   }
 
   /** A gain envelope: quick attack, exponential decay. */
-  private env(peak: number, attack: number, decay: number, at = 0) {
+  private env(peak: number, attack: number, decay: number, at = 0, out?: AudioNode) {
     const ctx = this.ctx!;
     const g = ctx.createGain();
     const t = ctx.currentTime + at;
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(peak, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
-    g.connect(this.master!);
+    g.connect(out ?? this.master!);
     return { g, t, end: t + attack + decay };
   }
 
@@ -311,6 +311,12 @@ class AudioEngine {
   speak(voice: Voice, seconds: number) {
     if (!this.ready || !this.enabled) return;
     const ctx = this.ctx!;
+    // Speech is scheduled ahead, so it gets its own bus that hush() can cut.
+    if (!this.voiceBus) {
+      this.voiceBus = ctx.createGain();
+      this.voiceBus.connect(this.master!);
+    }
+    const bus = this.voiceBus;
     const start = ctx.currentTime + 0.05;
     let t = start;
     const end = start + seconds;
@@ -326,11 +332,11 @@ class AudioEngine {
     while (t < end) {
       const len = 0.08 + Math.random() * 0.14;
       if (voice === 'droid') {
-        const { g, t: at, end: stop } = this.env(0.06, 0.01, len, t - ctx.currentTime);
+        const { g, t: at, end: stop } = this.env(0.06, 0.01, len, t - ctx.currentTime, bus);
         const o = this.osc('sine', 900 + Math.random() * 1700, g, at, stop);
         o.frequency.exponentialRampToValueAtTime(700 + Math.random() * 2200, stop);
       } else {
-        const { g, t: at, end: stop } = this.env(0.09, 0.02, len, t - ctx.currentTime);
+        const { g, t: at, end: stop } = this.env(0.09, 0.02, len, t - ctx.currentTime, bus);
         const [f1, f2] = VOWELS[Math.floor(Math.random() * VOWELS.length)]!;
         const mix = ctx.createGain();
         mix.gain.value = 1;
@@ -358,6 +364,14 @@ class AudioEngine {
       t += len + (Math.random() < 0.2 ? 0.18 : 0.03);
     }
   }
+
+  /** Silence any voicemail voice already scheduled (e.g. when the call ends or the scene changes). */
+  hush() {
+    this.voiceBus?.disconnect();
+    this.voiceBus = null;
+  }
+
+  private voiceBus: GainNode | null = null;
 
   /** Cockpit ambience: an engine hum, a little air noise, and a slow minor-key pad. */
   startAmbience() {

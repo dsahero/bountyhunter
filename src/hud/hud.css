@@ -202,12 +202,13 @@
   opacity: 0.8;
 }
 
-/* Phones: HUD controls fold behind a Settings button */
+/* Narrower windows and phones: HUD controls fold behind a Settings button
+   (so the side panel never covers them). */
 .hud__menu {
   display: none;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1100px) {
   .hud__menu {
     display: inline-flex;
   }

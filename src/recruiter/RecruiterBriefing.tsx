@@ -30,6 +30,7 @@ import {
   type FocusArea,
 } from './match';
 import { candidateSummary, contactCard } from './exports';
+import { PortraitSlot } from '../hub/PortraitSlot';
 import './recruiter.css';
 
 /** Shared with scripts/prerender.mjs (via entry-server) so the static HTML gets the same meta. */
@@ -168,6 +169,7 @@ export function RecruiterBriefing() {
       <main className="rb__main">
         {/* ---------- Who, what, when ---------- */}
         <section className="rb__hero" aria-labelledby="rb-name">
+          <PortraitSlot className="rb__photo" />
           <h1 id="rb-name">{identity.name}</h1>
           <p className="rb__headline">{recruiter.headline}</p>
           <ul className="rb__badges">

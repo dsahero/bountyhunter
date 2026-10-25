@@ -14,6 +14,8 @@ import type { Associate } from '../../content/schema';
 import { makeHoloMaterial, useHoloFade, HOLO_BLUE } from '../holo/holoMaterial';
 import { makeTextSprite } from '../holo/textSprite';
 import { Bust } from './Bust';
+import { StaticBatch } from '../perf/StaticBatch';
+import { useInView } from '../perf/ViewCull';
 import { Projector, useClickable, useFocusScale, useIsActive } from './common';
 
 const RING_RADIUS = 0.16;
@@ -32,6 +34,7 @@ function AssociateBust({
   const material = useMemo(() => makeHoloMaterial(HOLO_BLUE, 0.3), []);
   useHoloFade([material], active ? (selected ? 1.1 : 0.45) : selected ? 0.5 : 0.25);
   const group = useRef<THREE.Group>(null);
+  const inView = useInView();
   const click = useClickable(
     useMemo(
       () => () => {
@@ -42,6 +45,7 @@ function AssociateBust({
     ),
   );
   useFrame((_, dt) => {
+    if (!inView.current) return; // off screen: nothing to animate
     const g = group.current;
     if (!g) return;
     const s = THREE.MathUtils.damp(g.scale.x, selected ? 0.13 : 0.08, 6, dt);
@@ -54,7 +58,9 @@ function AssociateBust({
       rotation-y={angle}
     >
       <group ref={group} scale={0.08} {...click}>
-        <Bust archetype={associate.archetype} material={material} />
+        <StaticBatch>
+          <Bust archetype={associate.archetype} material={material} />
+        </StaticBatch>
         {/* Generous invisible hit area */}
         <mesh visible={false} position={[0, 0.5, 0]}>
           <boxGeometry args={[1, 1.2, 1]} />

@@ -1,15 +1,16 @@
 import { portfolio } from '../content/portfolio';
+import { usePortrait } from '../lib/portrait';
 
 /**
- * The wanted-poster photo. Shows `identity.portrait` when set; otherwise an
- * empty framed slot (with a silhouette) waiting for your photo.
+ * The wanted-poster photo (see lib/portrait: your live profile photo), or a
+ * framed silhouette until one loads.
  */
 export function PortraitSlot({ className }: { className?: string }) {
-  const { portrait, name } = portfolio.identity;
+  const photo = usePortrait();
   return (
     <div className={`portrait-slot ${className ?? ''}`}>
-      {portrait ? (
-        <img src={portrait} alt={name} />
+      {photo ? (
+        <img src={photo.src} alt={portfolio.identity.name} />
       ) : (
         <svg viewBox="0 0 60 70" aria-hidden="true">
           <circle cx="30" cy="24" r="13" />

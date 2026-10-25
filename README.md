@@ -93,6 +93,16 @@ To bring your edits back: export from Blender as `exports/hunter.obj` (Y up, wit
 - **The plain dossier is prerendered** to static HTML at build time, so it works without JavaScript and search engines can index it.
 - **Quality tiers** ([`quality.ts`](src/lib/quality.ts)) lower the effects on phones and fall back to a 2D cockpit when WebGL is unavailable.
 
+## Performance
+
+- **Fewer draw calls:** [`StaticBatch`](src/three/perf/StaticBatch.tsx) merges parts that never move (the cockpit shell, canopy, consoles, cargo hold, each hologram bust, the door) into one mesh per material after they mount. Clickable and animated pieces keep their own meshes, so nothing behaves differently. That roughly halves the draw calls.
+- **Only what you look at:** [`ViewCull`](src/three/perf/ViewCull.tsx) hides whole regions (the wanted, homeworld, and associates holograms, the poster wall) while they're out of view, and their animations pause (`useInView`). Lights are never culled, so the lighting doesn't change as you turn.
+- **Adaptive resolution:** rendering starts at up to 1.5x pixel density and steps between 1x and 2x with the frame rate.
+- **Small things:** blinking console lights upload only when one flips; the hunter's hair is checked only when it changes.
+- **Measure it:** add `?perf` to any URL for a live readout (fps, draw calls, triangles, lights), or run `npm run perf` for a report across several views.
+
+Why not convert everything to model files? A .glb of the same shapes draws exactly the same way (and adds a download); what costs time is the number of separate meshes, lights, and pixels, which is what the above reduces. Your Blender hunter does load as a model (`public/models/hunter.glb`).
+
 ## Accessibility
 
 - Skip intro is visible from the first frame, and the plain dossier is always one click away.

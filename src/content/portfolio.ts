@@ -24,7 +24,10 @@ export const portfolio: Portfolio = {
     name: 'Lihi Ancikovsky',
     alias: 'The Hokie Ghost',
     tagline: 'Full-stack engineer. AI researcher. Hardest target in the Outer Rim.',
-    portrait: null, // e.g. '/images/portrait.jpg' (shown in the wanted poster photo slot)
+    // Your LinkedIn photo, fetched live through unavatar.io (it updates when you
+    // change it on LinkedIn); your GitHub avatar if that ever fails.
+    portrait: 'https://unavatar.io/linkedin/lihi-ancikovsky-53361724b?fallback=false',
+    portraitFallback: 'https://github.com/dsahero.png?size=256',
     scanModel: null, // e.g. '/models/me.glb' (a 3D scan, shown as the jittery blue wanted hologram)
     bio: [
       'Computer Science senior at Virginia Tech specializing in Data-Centric Computing, with a minor in Mathematics.',
@@ -1037,6 +1040,10 @@ export const portfolio: Portfolio = {
         icon: '🛡',
         title: 'Ship Defender',
         description: 'Beat the defense terminal.',
+        locked: {
+          title: 'Click the Guitar',
+          description: 'There’s a guitar somewhere in this cockpit. Click it.',
+        },
       },
       { id: 'resume', icon: '📄', title: 'Paper Trail', description: 'Open the resume.' },
       {

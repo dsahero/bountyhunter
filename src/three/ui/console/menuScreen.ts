@@ -10,6 +10,7 @@ export function drawMenu(
   items: ConsoleItem[],
   page = 0,
   pages = 1,
+  photo: HTMLImageElement | null = null,
 ): Region[] {
   const regions: Region[] = [];
   // Small utility buttons, top right.
@@ -23,7 +24,7 @@ export function drawMenu(
   }
   // Wanted card, left.
   const card = { id: 'wanted', x: PAD, y: 54, w: 196, h: H - 54 - 40 };
-  wantedCard(ctx, card, hover === 'wanted', focus === 'wanted');
+  wantedCard(ctx, card, hover === 'wanted', focus === 'wanted', photo);
   regions.push(card);
   // Station files, right: a two-column grid that fits however many there are.
   const files = items.filter((i) => i.kind === 'station');

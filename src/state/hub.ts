@@ -245,6 +245,7 @@ export const useHub = create<HubState>((set, get) => {
     },
     hangUp: () => {
       callTimers.splice(0).forEach((t) => window.clearTimeout(t));
+      audio.hush();
       const wasCat = get().call?.kind === 'cat' && get().call?.connected;
       set({ call: null });
       if (wasCat) cue('holoOff', portfolio.site.captions.hangUp);

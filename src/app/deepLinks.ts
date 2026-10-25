@@ -131,7 +131,8 @@ export function useUrlSync() {
     }, 60);
     const sync = () => {
       const path = pathFor();
-      if (location.pathname !== path) history.replaceState(null, '', path);
+      // Keep any query (e.g. ?perf) when the path follows the view.
+      if (location.pathname !== path) history.replaceState(null, '', path + location.search);
       document.title = titleFor();
     };
     const unsubscribe = useHub.subscribe(sync);

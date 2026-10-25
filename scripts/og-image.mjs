@@ -26,6 +26,21 @@ for (const [key, pkg, file] of [
   fonts[key] = `data:font/woff2;base64,${data.toString('base64')}`;
 }
 
+// Your photo (portrait, then the fallback), inlined so the render doesn't depend on the network later.
+const photoSources = [pick('portrait'), pick('portraitFallback')].filter((s) => s.startsWith('http'));
+let photo = '';
+for (const src of photoSources) {
+  try {
+    const res = await fetch(src);
+    if (!res.ok) continue;
+    const type = res.headers.get('content-type') ?? 'image/jpeg';
+    photo = `data:${type};base64,${Buffer.from(await res.arrayBuffer()).toString('base64')}`;
+    break;
+  } catch {
+    /* next */
+  }
+}
+
 const stars = Array.from({ length: 160 }, (_, i) => {
   const x = (i * 7919) % 1200;
   const y = (i * 104729) % 630;
@@ -48,6 +63,7 @@ i { position: absolute; background: #fff; border-radius: 50%; }
   background: #e9dcc0; color: #1b1410; border: 10px solid #1b1410; text-align: center; box-shadow: 0 30px 60px #000a; }
 .poster h2 { font: 900 50px Orbitron; color: #8a1f15; letter-spacing: 4px; }
 .photo { margin: 14px auto; width: 170px; height: 170px; background: #9a9a9a; position: relative; overflow: hidden; border: 3px solid #5a4630; }
+.photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; filter: sepia(0.25); }
 .photo::before { content: ''; position: absolute; left: 50%; top: 34px; width: 64px; height: 64px; margin-left: -32px; border-radius: 50%; background: #6f6f6f; }
 .photo::after { content: ''; position: absolute; left: 50%; top: 104px; width: 130px; height: 120px; margin-left: -65px; border-radius: 50%; background: #6f6f6f; }
 .poster .name { font: 700 24px Orbitron; margin-top: 8px; }
@@ -59,7 +75,7 @@ i { position: absolute; background: #fff; border-radius: 50%; }
 .tag { font: 30px/1.3 Rajdhani; margin-top: 22px; color: #d8e2ea; }
 .cta { display: inline-block; margin-top: 30px; padding: 12px 22px; border: 2px solid #5fd4ff; color: #5fd4ff; font: 22px Mono; letter-spacing: 2px; }
 </style></head><body>${stars}<div class="planet"></div>
-<div class="poster"><h2>WANTED</h2><div class="photo"></div>
+<div class="poster"><h2>WANTED</h2><div class="photo">${photo ? `<img src="${photo}" alt="">` : ''}</div>
 <div class="name">${name}</div><div class="alias">“${alias}”</div>
 <div class="reward">${reward.toLocaleString('en-US')} CREDITS</div></div>
 <div class="copy"><div class="kicker">BOUNTY GUILD // CONTRACT</div>

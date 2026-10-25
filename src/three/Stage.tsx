@@ -19,11 +19,16 @@ import { CameraRig } from './camera/CameraRig';
 import { HoloClock } from './holo/holoMaterial';
 import { Effects, OutlineOnly } from './fx/Effects';
 import { Selection } from '@react-three/postprocessing';
+import { PerfStats, perfEnabled } from './fx/PerfStats';
 
 export default function Stage({ tier }: { tier: Tier }) {
   const phase = useExperience((s) => s.phase);
+  const [showPerf] = useState(perfEnabled);
   const maxDpr = tier === 'high' ? 2 : 1.5;
-  const [dpr, setDpr] = useState(Math.min(window.devicePixelRatio, maxDpr));
+  // Resolution adapts to the device: start a little under the screen's
+  // density, step up while frames are comfortably fast, back down if not.
+  const ceiling = Math.min(window.devicePixelRatio, maxDpr);
+  const [dpr, setDpr] = useState(Math.min(ceiling, 1.5));
 
   return (
     <Canvas
@@ -41,12 +46,16 @@ export default function Stage({ tier }: { tier: Tier }) {
     >
       {/* Drop resolution if the frame rate sags; never below 1x. */}
       <Selection>
-        <PerformanceMonitor onDecline={() => setDpr(1)} />
+        <PerformanceMonitor
+          onIncline={() => setDpr((d) => Math.min(ceiling, d + 0.25))}
+          onDecline={() => setDpr((d) => Math.max(1, d - 0.25))}
+        />
         <HoloClock />
         <Sky tier={tier} />
         <Cockpit tier={tier} showHelmet={phase === 'hub'} />
         {phase === 'hub' ? <CameraRig /> : <Arrival started={phase === 'arrival'} />}
         {tier === 'high' ? <Effects /> : <OutlineOnly />}
+        {showPerf && <PerfStats />}
       </Selection>
     </Canvas>
   );

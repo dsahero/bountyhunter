@@ -62,9 +62,9 @@ function AchievementsBoard() {
                 {on ? a.icon : '🔒'}
               </span>
               <span>
-                <strong>{a.title}</strong>
+                <strong>{on || !a.locked ? a.title : a.locked.title}</strong>
                 <span className="achievement__desc">
-                  {a.description}
+                  {on || !a.locked ? a.description : a.locked.description}
                   <span className="sr-only"> ({on ? t.progress : t.locked})</span>
                 </span>
               </span>
