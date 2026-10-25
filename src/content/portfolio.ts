@@ -24,8 +24,6 @@ export const portfolio: Portfolio = {
     name: 'Lihi Ancikovsky',
     alias: 'The Hokie Ghost',
     tagline: 'Full-stack engineer. AI researcher. Hardest target in the Outer Rim.',
-    // Your LinkedIn photo, fetched live through unavatar.io (it updates when you
-    // change it on LinkedIn); your GitHub avatar if that ever fails.
     portrait: 'https://unavatar.io/linkedin/lihi-ancikovsky-53361724b?fallback=false',
     portraitFallback: 'https://github.com/dsahero.png?size=256',
     scanModel: null, // e.g. '/models/me.glb' (a 3D scan, shown as the jittery blue wanted hologram)
@@ -53,7 +51,7 @@ export const portfolio: Portfolio = {
     specialization: 'Data-Centric Computing',
     minor: 'Mathematics',
     start: 'Aug 2023',
-    end: 'May 2027', // PLACEHOLDER: confirm graduation date
+    end: 'May 2027', 
     gpa: '3.74 in major',
     honors: ["Dean's List: Spring 2024, Spring 2025, Fall 2025, Spring 2026"],
     planet: {
@@ -64,7 +62,6 @@ export const portfolio: Portfolio = {
       position: [-0.55, 0.15],
       lore: 'A hilly world of limestone citadels and maroon-and-orange dusk skies on the edge of the Blue Ridge Expanse. Its academy trains the galaxy’s most stubborn engineers, forged in long winters and longer problem sets.',
     },
-    // PLACEHOLDER: swap in the courses you actually took.
     courses: [
       {
         code: 'CS 3114',
@@ -78,12 +75,12 @@ export const portfolio: Portfolio = {
         moonName: 'Computer Systems',
         blurb: 'Processes, threads, memory, and building a shell from scratch.',
       },
-      {
-        code: 'CS 4604',
-        title: 'Database Management Systems',
-        moonName: 'Database Management Systems',
-        blurb: 'Relational design, SQL, indexing, and query optimization.',
-      },
+      // {
+      //   code: 'CS 4604',
+      //   title: 'Database Management Systems',
+      //   moonName: 'Database Management Systems',
+      //   blurb: 'Relational design, SQL, indexing, and query optimization.',
+      // },
       {
         code: 'CS 3654',
         title: 'Data Analytics & Visualization',
@@ -830,8 +827,8 @@ export const portfolio: Portfolio = {
       title: 'A NEW HIRE',
       paragraphs: [
         'It is a period of fierce competition. Across the Outer Rim, corporate guilds wage a silent war for the galaxy’s rarest resource: talent.',
-        'The Bounty Guild has posted its richest contract in a generation. The target, a rogue engineer known only as “{NAME}”, has been spotted shipping production code on {WORLDS} separate worlds.',
-        'Aboard a battered hunter-class ship, YOU have accepted the contract. Study the dossier. Learn the target’s associates. And whatever you do, bring them in alive....',
+        'The HUNTER ALLIANCE has posted the highest bounty ever seen. The target, a rogue engineer known only as “{NAME}”, has been spotted shipping legendary production code throughout the galaxy. The guilds are scrambling to recruit this elusive talent.',
+        'The mysterious patron has requested hunters to be quick and thorough. And most importantly, to bring her in alive...',
       ],
       continue: 'Continue ▸',
     },
@@ -839,7 +836,7 @@ export const portfolio: Portfolio = {
     /** Typed over the arrival shot, one line at a time. */
     contract: [
       'You’re a bounty hunter working the Outer Rim.',
-      'The best contracts go to the best talent.',
+      'You’ve decided to take up this new contract. It could pay off the load you took on to buy the ship.',
       'Here is your next target.',
     ],
 
@@ -1283,19 +1280,19 @@ export const portfolio: Portfolio = {
       guitarTitle: 'Cantina guitar',
       guitarBlurb:
         'A battered six-string from a cantina gig in Blacksburg. Loading tuning profile... restoring string tension... scanning set list... syncing with the ship’s audio bus... applying reverb from the Mos Espa cantina preset...',
-      caller: 'Hunter Kessa Vane',
-      alert: 'We’re being attacked!!',
-      terminalTitle: 'DEFENSE TERMINAL // MANUAL OVERRIDE',
+      caller: 'H-0897',
+      alert: 'Hunter! We’re being hacked!!!',
+      terminalTitle: 'DEFENSE TERMINAL: MANUAL OVERRIDE',
       skipStage: 'Skip stage ▸',
       shields: 'SHIELDS',
       progress: 'PROGRESS',
       games: {
         firewall: {
-          title: 'STAGE 1 // FIREWALL',
+          title: 'STAGE 1: FIREWALL',
           help: 'Match the intruder signature. Arrow keys to choose, Enter to lock.',
         },
         typing: {
-          title: 'STAGE 2 // TORPEDO JAMMER',
+          title: 'STAGE 2: TORPEDO JAMMER',
           help: 'Type each torpedo’s guidance code before it hits the shields.',
           words: [
             'ion',
@@ -1311,11 +1308,11 @@ export const portfolio: Portfolio = {
           ],
         },
         cargo: {
-          title: 'STAGE 3 // CARGO STABILIZER',
+          title: 'STAGE 3: CARGO STABILIZER',
           help: 'Pack the loose cargo: clear 3 rows. Hold ←/→ to slide, ↑ rotate, ↓ drop, Space slam, C hold.',
         },
       },
-      won: 'Threat neutralized. A new transmission has been decrypted in the cargo hold.',
+      won: 'Threat neutralized. A new project poster has been decrypted in the cargo hold.',
     },
 
     /** Captions for every sound (shown while sound is on). */

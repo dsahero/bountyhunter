@@ -31,8 +31,8 @@ function menuFiles(): ConsoleItem[] {
   return [
     ...STATION_ORDER.map((key) => ({
       id: `station:${key}`,
-      label: lore.sections[key].lore,
-      sub: lore.sections[key].real,
+      label: lore.sections[key].real,
+      sub: lore.sections[key].lore,
       kind: 'station' as const,
     })),
     {

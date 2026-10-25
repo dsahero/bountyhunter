@@ -2,6 +2,8 @@
 
 A cinematic, first-person, Star Wars-inspired portfolio. You play a bounty hunter, and the target on the dossier is me, [Lihi Ancikovsky](https://www.linkedin.com/in/lihi-ancikovsky).
 
+**Live site:** [https://www.lihianci.com](https://www.lihianci.com)
+
 My background is told as in-universe lore:
 
 | Real          | In-universe                                    |

@@ -60,13 +60,25 @@ describe('console menu pages', () => {
     const pages = menuPageCount();
     expect(pages).toBeGreaterThan(1);
     const seen = new Set<string>();
+    const filesById = new Map<string, { label: string; sub?: string }>();
     for (let p = 0; p < pages; p++) {
       const files = consoleItems('menu', false, false, p).filter((i) => i.kind === 'station');
       expect(files.length).toBeLessThanOrEqual(FILES_PER_PAGE);
-      files.forEach((f) => seen.add(f.id));
+      files.forEach((f) => {
+        seen.add(f.id);
+        filesById.set(f.id, f);
+      });
     }
     expect(seen.has('app:achievements')).toBe(true);
     expect(seen.has('app:guestbook')).toBe(true);
+    for (const key of SECTION_KEYS) {
+      expect(filesById.get(`station:${key}`)).toEqual({
+        id: `station:${key}`,
+        label: portfolio.site.sections[key].real,
+        sub: portfolio.site.sections[key].lore,
+        kind: 'station',
+      });
+    }
     // The 2D console lists everything at once.
     expect(consoleItems('menu', false, false, 0, false).filter((i) => i.kind === 'pager')).toEqual(
       [],
