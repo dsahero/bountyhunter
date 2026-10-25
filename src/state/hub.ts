@@ -7,27 +7,29 @@
  * also highlights it on the star-map timeline, and vice versa.
  */
 import { create } from 'zustand';
+import { ANCHORS, PROPS, lookAtPoint, type StationId } from '../hub/layout';
 import {
-  ANCHORS,
-  EYE,
-  GUITAR,
-  HELMET_ON_SHELF,
-  PROPS,
-  type PropId,
-  lookAtPoint,
-  posterPoint,
-  type StationId,
-  type Vec3,
-} from '../hub/layout';
-import { chargeWorldPoint } from '../hub/timeline';
+  INSPECT_POINTS,
+  consoleLook,
+  inspectFov,
+  lookForPoint,
+  lookForStation,
+  posterOrder,
+  type HubApp,
+  type Inspectable,
+} from './hubView';
 import { useLook } from './look';
 import { portfolio } from '../content/portfolio';
 import { caption, cue } from '../audio/cues';
+import { audio } from '../audio/engine';
 import { useConsoleUi } from './consoleUi';
+import { useAchievements, unlockAchievement } from './achievements';
+import { track } from '../lib/analytics';
+import { SECTION_KEYS } from '../content/schema';
 import { chronological } from '../hub/timeline';
 import type { Associate } from '../content/schema';
 
-export type Unit = Associate['unit'];
+type Unit = Associate['unit'];
 
 interface HubState {
   station: StationId | null;
@@ -51,6 +53,9 @@ interface HubState {
   /** A cockpit object being looked at closely (side panel), if any. */
   inspect: Inspectable | null;
   inspectItem: (item: Inspectable) => void;
+  /** A console app open in the side panel (from the menu's second page), if any. */
+  app: HubApp | null;
+  openApp: (app: HubApp) => void;
   /** An active comms call (a contact from portfolio.site.contacts), if any. */
   /** `connected`: a holocall rings a few times before it's picked up. */
   call: { index: number; kind: 'voicemail' | 'cat'; connected: boolean } | null;
@@ -81,20 +86,12 @@ interface HubState {
         | 'hangUp'
         | 'holoShutdown'
         | 'inspectItem'
+        | 'openApp'
         | 'recenter'
       >
     >,
   ) => void;
 }
-
-export type Inspectable = 'helmet' | 'guitar' | PropId;
-
-/** Where each inspectable object is (world points). */
-export const INSPECT_POINTS: Record<Inspectable, Vec3> = {
-  helmet: HELMET_ON_SHELF.position,
-  guitar: [GUITAR.position[0], GUITAR.position[1] + 0.06, GUITAR.position[2]],
-  ...PROPS,
-};
 
 /** What's on screen: the station plus anything selected inside it. */
 interface View {
@@ -103,96 +100,14 @@ interface View {
   project: string | null;
 }
 
-/** Vertical field of view: wide at the console, zoomed in when a station is open. */
-export function targetFov(stationOpen: boolean, portrait: boolean) {
-  if (portrait) return stationOpen ? 60 : 82;
-  return stationOpen ? 42 : 62;
-}
-
-/** Rough size (radius, meters) of each inspectable thing, so the close-up frames it. */
-/** How much room to leave around an inspected object (1 = it fills the view). */
-const CLOSEUP_ROOM = 2.0;
-
-const INSPECT_RADIUS: Partial<Record<Inspectable, number>> = { guitar: 0.6, helmet: 0.2 };
-
-/**
- * Lens for a close look at an inspected object: narrow enough that it fills
- * the view (the camera zooms in; the object itself never grows).
- */
-export function inspectFov(item: Inspectable, portrait: boolean) {
-  const [x, y, z] = INSPECT_POINTS[item];
-  const d = Math.hypot(x - EYE[0], y - EYE[1], z - EYE[2]);
-  const r = INSPECT_RADIUS[item] ?? 0.11;
-  // Frame the object with plenty of room around it (it fills about half the view).
-  const fov = ((2 * Math.atan((r * CLOSEUP_ROOM) / d) * 180) / Math.PI) * (portrait ? 1.5 : 1);
-  return Math.min(50, Math.max(18, fov));
-}
-
-/** The lens for what's on screen right now. */
-export function currentFov(portrait: boolean) {
-  const { station, inspect } = useHub.getState();
-  if (inspect) return inspectFov(inspect, portrait);
-  return targetFov(!!station, portrait);
-}
-
-/** Fraction of the screen width the station panel covers on desktop (see panels.css). */
-export const PANEL_FRACTION = 0.56;
-
-/** The posters, in wall order (classified last). */
-export function posterOrder() {
-  return [...portfolio.propaganda].sort((a, b) => Number(a.classified) - Number(b.classified));
-}
-
-/** The exact thing to look at for a station, given what's selected in it. */
-function focusPoint(id: StationId, state: Pick<HubState, 'charge' | 'project'>): Vec3 {
-  if (id === 'experience') return chargeWorldPoint(state.charge);
-  if (id === 'projects' && state.project) {
-    const i = posterOrder().findIndex((p) => p.id === state.project);
-    if (i >= 0) return posterPoint(i);
-  }
-  return ANCHORS[id];
-}
-
-/**
- * Where to point the head for a point of interest. On desktop the target is
- * centered in the part of the screen the panel leaves uncovered; in portrait
- * it sits in the top third (the panel is a bottom sheet).
- */
-export function lookForPoint(point: Vec3, fov?: number) {
-  const look = lookAtPoint(point);
-  if (typeof window === 'undefined') return look;
-  const aspect = window.innerWidth / window.innerHeight;
-  const portrait = aspect < 1;
-  const halfV = (((fov ?? targetFov(true, portrait)) / 2) * Math.PI) / 180;
-  if (portrait) {
-    // Put the target ~1/3 of the way down: look lower by that fraction of the half-height.
-    return { ...look, pitch: look.pitch - Math.atan(Math.tan(halfV) * 0.35) };
-  }
-  // Center the target in the part of the screen the panel leaves uncovered.
-  const halfH = Math.atan(Math.tan(halfV) * aspect);
-  const offset = PANEL_FRACTION; // target at (1 - PANEL_FRACTION) / 2 across = this much of the half-width left of center
-  return { ...look, yaw: look.yaw - Math.atan(Math.tan(halfH) * offset) };
-}
-
 /** Stations whose view is a hologram (Holo off closes them). */
 const HOLO_STATIONS: StationId[] = ['about', 'education', 'experience', 'leadership', 'skills'];
-
-/** Stations shown entirely in-world (no side panel), so they're centered. */
-export const IN_WORLD_STATIONS: StationId[] = ['leadership'];
-
-export function lookForStation(id: StationId) {
-  const point = focusPoint(id, useHub.getState());
-  return IN_WORLD_STATIONS.includes(id) ? lookAtPoint(point) : lookForPoint(point);
-}
-
-export function consoleLook() {
-  return lookAtPoint(ANCHORS.console);
-}
 
 const firstAssociate = portfolio.associates[0]!;
 
 /** A holocall rings this many times (this far apart, ms) before it's picked up. */
 const CAT_RINGS = 3;
+const VOICEMAIL_RINGS = 2;
 const RING_GAP = 2400;
 const callTimers: number[] = [];
 
@@ -226,10 +141,22 @@ export const useHub = create<HubState>((set, get) => {
     if (get().call) get().hangUp();
     useConsoleUi.getState().set({ mode: 'menu' });
     if (get().inspect) set({ inspect: null });
+    if (get().app) set({ app: null });
     // Opening a hologram station powers the holograms back up.
     if (v.station && get().holosOff) set({ holosOff: false });
     if (v.station === 'experience' || v.station === 'leadership') set({ overhead: v.station });
     set({ station: v.station, charge: v.charge, project: v.project });
+    if (v.station) {
+      useAchievements.getState().see('all-stations', v.station, SECTION_KEYS);
+      if (v.station === 'resume') unlockAchievement('resume');
+      track('open_station', { station: v.station });
+    }
+    if (v.station === 'projects' && v.project)
+      useAchievements.getState().see(
+        'all-posters',
+        v.project,
+        posterOrder().map((p) => p.id),
+      );
     const { yaw, pitch } = v.station ? lookForStation(v.station) : consoleLook();
     turnTo(yaw, pitch, booting && !!v.station);
   };
@@ -243,9 +170,19 @@ export const useHub = create<HubState>((set, get) => {
     history: [],
     call: null,
     inspect: null,
-    inspectItem: (item) => {
+    app: null,
+    openApp: (app) => {
       if (get().call) get().hangUp();
-      set({ station: null, history: [], inspect: item });
+      set({ station: null, history: [], inspect: null, app });
+      // The panel opens beside the main computer; keep the screen in view.
+      const { yaw, pitch } = lookForPoint(ANCHORS.console);
+      turnTo(yaw, pitch, false);
+    },
+    inspectItem: (item) => {
+      if (item === 'helmet') unlockAchievement('helmet');
+      if (item in PROPS) useAchievements.getState().see('tchotchkes', item, Object.keys(PROPS));
+      if (get().call) get().hangUp();
+      set({ station: null, history: [], inspect: item, app: null });
       const portrait = typeof window !== 'undefined' && window.innerWidth < window.innerHeight;
       const { yaw, pitch } = lookForPoint(INSPECT_POINTS[item], inspectFov(item, portrait));
       turnTo(yaw, pitch, false);
@@ -265,18 +202,45 @@ export const useHub = create<HubState>((set, get) => {
           window.setTimeout(() => {
             if (get().call?.index !== index) return;
             set({ call: { index, kind: 'cat', connected: true } });
+            unlockAchievement('cat');
             cue('boot', captions.pickUp);
             const { yaw, pitch } = lookAtPoint(ANCHORS.experience);
             turnTo(yaw, pitch, false);
           }, CAT_RINGS * RING_GAP),
         );
       } else {
-        set({ call: { index, kind: 'voicemail', connected: true } });
-        cue('voicemail', portfolio.site.captions.voicemail);
-        caption(`${contact.name}: ${portfolio.site.voicemail}`, 6000);
-        window.setTimeout(() => {
-          if (get().call?.index === index) set({ call: null });
-        }, 6000);
+        // Rings twice, then the greeting (subtitled, in their voice), then the tone.
+        set({ call: { index, kind: 'voicemail', connected: false } });
+        const later = (ms: number, fn: () => void) =>
+          callTimers.push(
+            window.setTimeout(() => {
+              if (get().call?.index === index) fn();
+            }, ms),
+          );
+        const captions = portfolio.site.captions;
+        for (let i = 0; i < VOICEMAIL_RINGS; i++)
+          later(i * RING_GAP, () => cue('ring', captions.ring));
+        let at = VOICEMAIL_RINGS * RING_GAP;
+        later(at, () => set({ call: { index, kind: 'voicemail', connected: true } }));
+        for (const line of contact.greeting ?? [portfolio.site.voicemail]) {
+          const ms = Math.min(7000, Math.max(2600, 1400 + line.length * 55));
+          later(at, () => {
+            caption(`${contact.name}: “${line}”`, ms);
+            audio.speak(contact.voice ?? 'human', (ms - 600) / 1000);
+          });
+          at += ms;
+        }
+        later(at, () => {
+          cue('voicemail', captions.voicemail);
+          unlockAchievement('voicemail');
+          const everyone = portfolio.site.contacts.filter((c) => c.kind === 'voicemail');
+          useAchievements.getState().see(
+            'all-voicemails',
+            contact.name,
+            everyone.map((c) => c.name),
+          );
+        });
+        later(at + 2400, () => set({ call: null }));
       }
     },
     hangUp: () => {
@@ -297,18 +261,21 @@ export const useHub = create<HubState>((set, get) => {
       if (hub.call) hub.hangUp();
       if (hub.station && HOLO_STATIONS.includes(hub.station)) hub.close();
       set({ holosOff: true });
+      unlockAchievement('holo-off');
       cue('holoOff', portfolio.site.captions.holoOff);
     },
     recenter: () => {
-      const { station, inspect } = get();
+      const { station, inspect, app } = get();
       const want = station
         ? lookForStation(station)
-        : inspect
-          ? lookForPoint(
-              INSPECT_POINTS[inspect],
-              inspectFov(inspect, window.innerWidth < window.innerHeight),
-            )
-          : consoleLook();
+        : app
+          ? lookForPoint(ANCHORS.console)
+          : inspect
+            ? lookForPoint(
+                INSPECT_POINTS[inspect],
+                inspectFov(inspect, window.innerWidth < window.innerHeight),
+              )
+            : consoleLook();
       const look = useLook.getState();
       const off =
         Math.abs(Math.atan2(Math.sin(look.yaw - want.yaw), Math.cos(look.yaw - want.yaw))) +
@@ -322,7 +289,7 @@ export const useHub = create<HubState>((set, get) => {
       show({ ...view(), station: id }, true);
     },
     close: () => {
-      set({ history: [], inspect: null });
+      set({ history: [], inspect: null, app: null });
       show({ ...view(), station: null, project: null }, false);
     },
     selectCharge: (id) => {

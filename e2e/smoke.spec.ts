@@ -33,7 +33,7 @@ test('plain dossier is server-rendered and hydrates cleanly', async ({ page, bro
   await noJs.close();
 });
 
-test('skip intro lands in the hub and is remembered on reload', async ({ page }) => {
+test('skip intro lands in the hub and is remembered on reload', async ({ page, isMobile }) => {
   const errors = trackErrors(page);
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Incoming Contract' })).toBeVisible();
@@ -44,6 +44,8 @@ test('skip intro lands in the hub and is remembered on reload', async ({ page })
   await expect(page.getByRole('heading', { name: NAME })).toBeVisible();
   await expect(page.getByRole('button', { name: /Skip intro/ })).toHaveCount(0);
 
+  // On phones the HUD controls fold behind a Settings button.
+  if (isMobile) await page.getByRole('button', { name: /Settings/ }).click();
   await page.getByRole('button', { name: 'Replay intro' }).click();
   await expect(page.getByRole('heading', { name: 'Incoming Contract' })).toBeVisible();
   expect(errors).toEqual([]);
@@ -96,7 +98,9 @@ test('arrow keys and Enter drive the console', async ({ page }) => {
   await expect(page.locator('.panel')).toHaveCount(0);
 });
 
-test('the guitar starts the attack; beating the terminal unlocks the last poster', async ({ page }) => {
+test('the guitar starts the attack; beating the terminal unlocks the last poster', async ({
+  page,
+}) => {
   test.setTimeout(90_000);
   const errors = trackErrors(page);
   const site = portfolio.site;
@@ -140,4 +144,91 @@ test('reduced motion shows a static crawl', async ({ browser }) => {
   await expect(page.locator('.crawl__static')).toBeVisible();
   await expect(page.locator('.crawl__floor')).toHaveCount(0);
   await ctx.close();
+});
+
+test('a shared link opens straight to a project, without the intro', async ({ page }) => {
+  const errors = trackErrors(page);
+  const dietre = portfolio.propaganda.find((p) => p.id === 'dietre')!;
+  await page.goto('/projects/dietre');
+  await expect(
+    page.getByRole('heading', { name: portfolio.site.sections.projects.lore }),
+  ).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(page.locator('.transmission').getByText(dietre.title).first()).toBeVisible();
+  await expect(page).toHaveURL(/\/projects\/dietre$/);
+  // Stepping to the next poster updates the address bar.
+  await page.locator('.step-nav .btn--holo').first().click();
+  await expect(page).not.toHaveURL(/\/projects\/dietre$/);
+  expect(errors).toEqual([]);
+});
+
+test('menu page two: sign the guestbook, then see the achievement', async ({ page }) => {
+  const errors = trackErrors(page);
+  const site = portfolio.site;
+  await page.goto('/cockpit');
+  const next = page.locator('[id="console-page:next"]');
+  await next.waitFor({ state: 'attached', timeout: 30_000 });
+  await next.dispatchEvent('click');
+  await page.locator('[id="console-app:guestbook"]').dispatchEvent('click');
+  await page.getByLabel(site.guestbook.name).fill('Test Pilot');
+  const note = `Smooth landing ${Date.now()}.`;
+  await page.getByLabel(site.guestbook.message).fill(note);
+  await page.getByRole('button', { name: site.guestbook.sign }).click();
+  await expect(page.getByText(site.guestbook.thanks)).toBeVisible();
+  await expect(page.getByText(note)).toBeVisible();
+  await page.goto('/achievements');
+  const signed = site.achievements.find((a) => a.id === 'guestbook')!;
+  await expect(page.locator('.achievement--on').getByText(signed.title)).toBeVisible({
+    timeout: 30_000,
+  });
+  expect(errors).toEqual([]);
+});
+
+test('phones get touch controls for the cargo game', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'touch controls are for phones');
+  test.setTimeout(90_000);
+  await page.goto('/cockpit');
+  const guitar = page.locator('#object-guitar');
+  await guitar.waitFor({ state: 'attached', timeout: 30_000 });
+  await guitar.dispatchEvent('click');
+  const skip = page.getByRole('button', { name: portfolio.site.attack.skipStage });
+  await skip.waitFor({ state: 'attached', timeout: 30_000 });
+  await skip.dispatchEvent('click'); // firewall
+  await expect(page.locator('.terminal-touch__type')).toBeVisible(); // typing
+  await skip.dispatchEvent('click');
+  await expect(page.getByRole('group', { name: portfolio.site.a11y.cargoControls })).toBeVisible();
+  // The HUD folds behind a Settings button on a phone.
+  await expect(page.getByRole('button', { name: /Settings/ })).toBeVisible();
+});
+
+test('recruiter briefing: prerendered, tailorable, and reachable from anywhere', async ({
+  page,
+  browser,
+}) => {
+  const errors = trackErrors(page);
+  const r = portfolio.recruiter;
+  const ui = portfolio.site.recruiterUi;
+  const hume = portfolio.charges.find((c) => c.id === 'hume')!;
+
+  // ?recruiter on any link lands on the briefing.
+  await page.goto('/projects?recruiter');
+  await expect(page).toHaveURL(/\/recruiter$/);
+  await expect(page.getByRole('heading', { level: 1, name: NAME })).toBeVisible();
+  await expect(page.getByText(r.headline)).toBeVisible();
+
+  // Tailoring reorders experience and puts the choice in the URL.
+  const ml = r.focusAreas.find((f) => f.id === 'ml')!;
+  await page.getByRole('button', { name: ml.label, exact: true }).click();
+  await expect(page).toHaveURL(/focus=ml/);
+  await expect(page.locator('#rb-exp ~ article h3').first()).toHaveText(hume.role);
+  await expect(page.getByText(ui.strongMatch).first()).toBeVisible();
+  expect(errors).toEqual([]);
+
+  // Static HTML: readable with JavaScript off.
+  const noJs = await browser.newContext({ javaScriptEnabled: false });
+  const plain = await noJs.newPage();
+  await plain.goto('/recruiter');
+  await expect(plain.getByText(r.highlights[0]!.detail)).toBeVisible();
+  await noJs.close();
 });

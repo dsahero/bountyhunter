@@ -19,8 +19,8 @@ import { Drift } from './Drift';
 import { earthCloudsTexture, orangeEarthTexture, plutoTexture } from '../procedural/planetTextures';
 
 /** Direction from the viewer toward the planet: ahead and below, like the film's opening. */
-export const PLANET_DIR = new THREE.Vector3(0.15, -0.55, -1).normalize();
-export const SUN_POSITION = new THREE.Vector3(-80, 45, -30);
+const PLANET_DIR = new THREE.Vector3(0.15, -0.55, -1).normalize();
+const SUN_POSITION = new THREE.Vector3(-80, 45, -30);
 
 const atmosphereVertex = /* glsl */ `
   varying vec3 vNormal;

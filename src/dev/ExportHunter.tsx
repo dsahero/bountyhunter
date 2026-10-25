@@ -16,7 +16,13 @@ import { Hunter, type HunterHandle } from '../three/scenes/Arrival/Hunter';
 import { Helmet } from '../three/scenes/Cockpit/Helmet';
 import { nameRig } from '../three/scenes/Arrival/hunterParts';
 
-function Exporter({ hunter, helmet }: { hunter: React.RefObject<HunterHandle>; helmet: React.RefObject<THREE.Group> }) {
+function Exporter({
+  hunter,
+  helmet,
+}: {
+  hunter: React.RefObject<HunterHandle>;
+  helmet: React.RefObject<THREE.Group>;
+}) {
   const scene = useThree((s) => s.scene);
   useEffect(() => {
     // Let the rig settle into its rest pose for a few frames, then export.

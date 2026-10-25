@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { seeded } from '../../procedural/textures';
 import { useClickable } from '../../stations/common';
 import { cue } from '../../../audio/cues';
+import { useAchievements } from '../../../state/achievements';
 import { portfolio } from '../../../content/portfolio';
 
 const PALETTE = ['#ffb347', '#ffb347', '#ff5a3c', '#5fd4ff', '#7dff9a'].map(
@@ -99,6 +100,7 @@ export function ButtonPanel({
       () => () => {
         const quips = portfolio.site.buttonQuips;
         cue('click', quips[Math.floor(Math.random() * quips.length)]);
+        useAchievements.getState().count('buttons', 10);
       },
       [],
     ),

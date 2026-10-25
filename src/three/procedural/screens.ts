@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { seeded } from './textures';
 
-export interface ScreenOptions {
+interface ScreenOptions {
   lines: string[];
   color?: string;
   background?: string;

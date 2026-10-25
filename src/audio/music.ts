@@ -8,7 +8,7 @@
  *
  * Synth tracks loop with a small look-ahead scheduler.
  */
-export type TrackName = 'crawl' | 'journey' | 'cockpit';
+export type TrackName = 'crawl' | 'journey' | 'cockpit' | 'alarm';
 
 type Voice = 'lead' | 'bass' | 'pad' | 'pluck';
 interface Note {
@@ -84,6 +84,7 @@ interface Playing {
   stop: () => void;
 }
 
+/** Cross-fade length (seconds) unless a player asks for another. */
 const FADE = 2.5;
 
 export class MusicPlayer {
@@ -92,6 +93,7 @@ export class MusicPlayer {
   constructor(
     private ctx: AudioContext,
     private master: AudioNode,
+    private fade = FADE,
   ) {}
 
   /** Cross-fade to a track (or to silence with null). `url` plays a file instead of the synth. */
@@ -103,7 +105,7 @@ export class MusicPlayer {
     if (!url && !synth) return; // nothing to play for this slot
     const out = this.ctx.createGain();
     out.gain.setValueAtTime(0.0001, this.ctx.currentTime);
-    out.gain.exponentialRampToValueAtTime(1, this.ctx.currentTime + FADE);
+    out.gain.exponentialRampToValueAtTime(1, this.ctx.currentTime + this.fade);
     out.connect(this.master);
     const stop = url ? this.playFile(url, out) : this.playSynth(synth!, out);
     this.current = { name, url, out, stop };
@@ -115,8 +117,8 @@ export class MusicPlayer {
     const t = this.ctx.currentTime;
     c.out.gain.cancelScheduledValues(t);
     c.out.gain.setValueAtTime(Math.max(c.out.gain.value, 0.0001), t);
-    c.out.gain.exponentialRampToValueAtTime(0.0001, t + FADE);
-    window.setTimeout(c.stop, FADE * 1000 + 200);
+    c.out.gain.exponentialRampToValueAtTime(0.0001, t + this.fade);
+    window.setTimeout(c.stop, this.fade * 1000 + 200);
     this.current = null;
   }
 

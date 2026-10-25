@@ -171,12 +171,19 @@ export function HoloArrow({
   const click = useClickable(onSelect);
   const sprite = useMemo(() => makeTextSprite(label, { height: 0.016, color: '#ffd9a0' }), [label]);
   const mat = useMemo(
-    () => new THREE.MeshBasicMaterial({ color: '#ffb347', transparent: true, opacity: 0.85, toneMapped: false }),
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: '#ffb347',
+        transparent: true,
+        opacity: 0.85,
+        toneMapped: false,
+      }),
     [],
   );
   const cone = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
-    if (cone.current) cone.current.position.x = dir * (0.02 + Math.sin(clock.elapsedTime * 3) * 0.006);
+    if (cone.current)
+      cone.current.position.x = dir * (0.02 + Math.sin(clock.elapsedTime * 3) * 0.006);
   });
   return (
     <group {...props} visible={visible}>

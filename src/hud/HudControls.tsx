@@ -1,7 +1,8 @@
 /**
- * Always-available controls: sound + volume, motion, replay, and the plain
+ * Always-available controls: sound + volume, motion, captions, replay, and the plain
  * dossier (the "no dead ends" escape hatch). Labels come from portfolio.site.hud.
  */
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { lore } from '../content/lore';
 import { useExperience } from '../state/experience';
@@ -14,10 +15,20 @@ export function HudControls({ className }: { className?: string }) {
   const volume = useSettings((s) => s.volume);
   const setSettings = useSettings((s) => s.set);
   const reduced = useReducedMotion();
+  const captions = useSettings((s) => s.captions);
   const h = lore.hud;
+  // Phones: the controls fold away behind one button so they don't cover the view.
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className={className}>
+    <div className={`${className ?? ''}${open ? ' is-open' : ''}`}>
+      <button
+        className="btn btn--ghost hud__menu"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        {open ? '✕' : '☰'} {h.settings}
+      </button>
       <button
         className="btn btn--ghost"
         aria-pressed={soundEnabled}
@@ -44,9 +55,19 @@ export function HudControls({ className }: { className?: string }) {
       >
         {h.motion}: {reduced ? h.motionReduced : h.motionFull}
       </button>
+      <button
+        className="btn btn--ghost"
+        aria-pressed={captions}
+        onClick={() => setSettings({ captions: !captions })}
+      >
+        {h.captions}: {captions ? h.on : h.off}
+      </button>
       <button className="btn btn--ghost" onClick={replay}>
         {h.replay}
       </button>
+      <Link className="btn btn--ghost" to="/recruiter">
+        {h.recruiter}
+      </Link>
       <Link className="btn btn--ghost" to="/dossier">
         {h.plainDossier}
       </Link>

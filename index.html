@@ -9,15 +9,23 @@
       name="description"
       content="A cinematic Star Wars-inspired portfolio. Climb into the cockpit and hunt down the galaxy's best engineering talent."
     />
-    <!-- Open Graph / Twitter. Set og:url + absolute og:image once the domain is final (M6). -->
+    <!-- Link previews (Slack, LinkedIn, iMessage...). %SITE_URL% comes from portfolio.site.siteUrl;
+         the image is public/og-image.png (npm run og:image). -->
+    <link rel="canonical" href="%SITE_URL%/" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bounty Hunter Cockpit" />
+    <meta property="og:url" content="%SITE_URL%/" />
     <meta property="og:title" content="Bounty Hunter Cockpit | %NAME%" />
     <meta
       property="og:description"
-      content="Wanted: the best talent in the Outer Rim. A cinematic portfolio."
+      content="Wanted: the best talent in the Outer Rim. A cinematic Star Wars-inspired portfolio."
     />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image" content="%SITE_URL%/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A wanted poster for %NAME% beside the words Bounty Hunter Cockpit." />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="%SITE_URL%/og-image.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>

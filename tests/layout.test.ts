@@ -23,7 +23,9 @@ describe('layout flexibility', () => {
       for (let j = i + 1; j < POSTER_SLOTS.length; j++)
         expect(overlap(a, POSTER_SLOTS[j]!.position, w, h)).toBe(false);
       // The door plus its 10 cm frame.
-      expect(overlap(a, CARGO_DOOR.position, CARGO_DOOR.width + 0.2, CARGO_DOOR.height + 0.1)).toBe(false);
+      expect(overlap(a, CARGO_DOOR.position, CARGO_DOOR.width + 0.2, CARGO_DOOR.height + 0.1)).toBe(
+        false,
+      );
     }
   });
 

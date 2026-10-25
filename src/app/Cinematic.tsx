@@ -26,6 +26,7 @@ import { ContractOverlay } from '../hud/ContractOverlay';
 import { Hub2D } from '../fallback/Hub2D';
 import { useDocumentMeta } from './useDocumentMeta';
 import { useAudioSync } from '../audio/useAudioSync';
+import { useUrlSync } from './deepLinks';
 import '../intro/intro.css';
 import '../hud/hud.css';
 
@@ -40,6 +41,7 @@ export function Cinematic() {
   const tier = useMemo(getTier, []);
   const webgl = tier !== 'none';
   useAudioSync();
+  useUrlSync();
 
   useDocumentMeta({
     title: `Bounty Hunter Cockpit | ${portfolio.identity.name}`,

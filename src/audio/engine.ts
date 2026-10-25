@@ -12,8 +12,6 @@ export type Sfx =
   | 'click'
   | 'beep'
   | 'boot'
-  | 'whoosh'
-  | 'hyperspace'
   | 'roar'
   | 'blaster'
   | 'clank'
@@ -29,6 +27,8 @@ export type Sfx =
   | 'chime'
   | 'rumble'
   | 'screech';
+
+export type Voice = 'deep' | 'human' | 'high' | 'droid' | 'alien';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -54,7 +54,9 @@ class AudioEngine {
       this.applyGain();
       if (this.wantAmbience) this.startAmbience();
       this.player = new MusicPlayer(this.ctx, this.master);
+      this.alarmPlayer = new MusicPlayer(this.ctx, this.master, 0.05); // starts and stops at once
       if (this.wantMusic) this.player.play(...this.wantMusic);
+      if (this.wantAlarm) this.alarmPlayer.play('alarm', this.wantAlarm);
     }
     void this.ctx.resume();
   }
@@ -161,26 +163,6 @@ class AudioEngine {
         this.osc('sine', 28, depth, t, end);
         break;
       }
-      case 'whoosh': {
-        const { g, t, end } = this.env(0.35, 0.12, 0.45);
-        const f = this.filter('bandpass', 300, 1.2);
-        f.frequency.setValueAtTime(300, t);
-        f.frequency.exponentialRampToValueAtTime(2600, end);
-        f.connect(g);
-        this.noiseSource(f, t, end);
-        break;
-      }
-      case 'hyperspace': {
-        const { g, t, end } = this.env(0.3, 0.5, 0.7);
-        const lp = this.filter('lowpass', 1600);
-        lp.connect(g);
-        const o = this.osc('sawtooth', 70, lp, t, end);
-        o.frequency.exponentialRampToValueAtTime(900, t + 0.55);
-        const nf = this.filter('highpass', 1200);
-        nf.connect(g);
-        this.noiseSource(nf, t, end);
-        break;
-      }
       case 'roar': {
         // A ship passing overhead: low engine growl with a doppler drop and a noise swell.
         const { g, t } = this.env(0.55, 1.4, 2.8);
@@ -275,7 +257,8 @@ class AudioEngine {
         bp.connect(g);
         this.noiseSource(bp, t, end);
         const o = this.osc('sawtooth', 1900, bp, t, end);
-        for (let i = 0; i < 10; i++) o.frequency.setValueAtTime(1700 + Math.random() * 600, t + i * 0.1);
+        for (let i = 0; i < 10; i++)
+          o.frequency.setValueAtTime(1700 + Math.random() * 600, t + i * 0.1);
         break;
       }
       case 'alarm': {
@@ -316,6 +299,63 @@ class AudioEngine {
         this.osc('sine', 110, g, t, end);
         break;
       }
+    }
+  }
+
+  /**
+   * A voice for voicemail greetings, synthesized (no recordings): syllables
+   * of a buzzy tone shaped by two vowel-like filters that change every
+   * syllable, so it sounds like muffled speech. `droid` beeps and whistles
+   * instead; `alien` is low with a heavy warble.
+   */
+  speak(voice: Voice, seconds: number) {
+    if (!this.ready || !this.enabled) return;
+    const ctx = this.ctx!;
+    const start = ctx.currentTime + 0.05;
+    let t = start;
+    const end = start + seconds;
+    const VOWELS = [
+      [730, 1090],
+      [530, 1840],
+      [270, 2290],
+      [570, 840],
+      [440, 1020],
+      [660, 1720],
+    ];
+    const base = { deep: 82, human: 135, high: 230, alien: 70, droid: 0 }[voice];
+    while (t < end) {
+      const len = 0.08 + Math.random() * 0.14;
+      if (voice === 'droid') {
+        const { g, t: at, end: stop } = this.env(0.06, 0.01, len, t - ctx.currentTime);
+        const o = this.osc('sine', 900 + Math.random() * 1700, g, at, stop);
+        o.frequency.exponentialRampToValueAtTime(700 + Math.random() * 2200, stop);
+      } else {
+        const { g, t: at, end: stop } = this.env(0.09, 0.02, len, t - ctx.currentTime);
+        const [f1, f2] = VOWELS[Math.floor(Math.random() * VOWELS.length)]!;
+        const mix = ctx.createGain();
+        mix.gain.value = 1;
+        for (const [f, q] of [
+          [f1!, 6],
+          [f2!, 9],
+        ] as const) {
+          const bp = this.filter('bandpass', f, q);
+          bp.connect(g);
+          mix.connect(bp);
+        }
+        const pitch = base * (0.9 + Math.random() * 0.25);
+        const o = this.osc('sawtooth', pitch, mix, at, stop);
+        if (voice === 'alien') {
+          const lfo = ctx.createOscillator();
+          const depth = ctx.createGain();
+          lfo.frequency.value = 7;
+          depth.gain.value = 18;
+          lfo.connect(depth).connect(o.frequency);
+          lfo.start(at);
+          lfo.stop(stop + 0.05);
+        }
+      }
+      // Words have gaps; sentences have longer ones.
+      t += len + (Math.random() < 0.2 ? 0.18 : 0.03);
     }
   }
 
@@ -387,35 +427,22 @@ class AudioEngine {
     this.ambience = null;
   }
 
-  /**
-   * Looping music from a file (see portfolio.site.audio), on a named channel,
-   * routed through the master gain so mute and volume apply. An empty url
-   * (or null) stops that channel.
-   */
-  loop(channel: string, url: string | null) {
-    const current = this.tracks.get(channel);
-    if (url && current?.src.endsWith(url)) return;
-    if (current) {
-      current.pause();
-      this.tracks.delete(channel);
-    }
-    if (!url || !this.ctx) return;
-    const el = new Audio(url);
-    el.loop = true;
-    el.crossOrigin = 'anonymous';
-    this.ctx.createMediaElementSource(el).connect(this.master!);
-    this.tracks.set(channel, el);
-    void el.play().catch(() => this.tracks.delete(channel));
-  }
-
-  private tracks = new Map<string, HTMLAudioElement>();
   private player: MusicPlayer | null = null;
   private wantMusic: [TrackName | null, string] | null = null;
+  /** The attack's alarm loop: its own channel, so it plays over (or without) the music. */
+  private alarmPlayer: MusicPlayer | null = null;
+  private wantAlarm = '';
 
   /** Cross-fade the music to a track (placeholder synth unless `url` names a file). */
   music(name: TrackName | null, url = '') {
     this.wantMusic = [name, url];
     this.player?.play(name, url);
+  }
+
+  /** Loop the alarm file during the attack (empty stops it). */
+  alarm(url: string) {
+    this.wantAlarm = url;
+    this.alarmPlayer?.play(url ? 'alarm' : null, url);
   }
 }
 

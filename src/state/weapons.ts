@@ -5,8 +5,9 @@
 import { create } from 'zustand';
 import { cue } from '../audio/cues';
 import { portfolio } from '../content/portfolio';
+import { unlockAchievement } from './achievements';
 
-export type Weapon = 'blaster' | 'torpedo';
+type Weapon = 'blaster' | 'torpedo';
 
 export interface Shot {
   id: number;
@@ -19,6 +20,7 @@ let nextId = 1;
 export const useWeapons = create<{ shots: Shot[]; fire: (kind: Weapon) => void }>((set, get) => ({
   shots: [],
   fire: (kind) => {
+    unlockAchievement(kind);
     const shot = { id: nextId++, kind, at: performance.now() };
     set({ shots: [...get().shots, shot] });
     cue(kind, portfolio.site.captions[kind]);

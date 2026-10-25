@@ -9,7 +9,7 @@ import { useExperience } from '../state/experience';
 export function IntroControls() {
   const skip = useExperience((s) => s.skip);
   return (
-    <nav className="intro-controls" aria-label="Intro controls">
+    <nav className="intro-controls" aria-label={lore.a11y.introControls}>
       <Link className="btn btn--ghost" to="/dossier">
         {lore.hud.plainDossier}
       </Link>

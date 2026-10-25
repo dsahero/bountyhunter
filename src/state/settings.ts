@@ -4,15 +4,17 @@
 import { create } from 'zustand';
 import { readJSON, writeJSON } from '../lib/storage';
 
-export type ReducedMotionSetting = 'system' | 'on' | 'off';
+type ReducedMotionSetting = 'system' | 'on' | 'off';
 
-export interface SettingsState {
+interface SettingsState {
   /** Returning visitors skip straight to the cockpit. */
   skipIntro: boolean;
   soundEnabled: boolean;
   /** 0..1 */
   volume: number;
   reducedMotion: ReducedMotionSetting;
+  /** On-screen captions for sounds and dialogue (on by default). */
+  captions: boolean;
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void;
 }
 
@@ -29,6 +31,7 @@ const DEFAULTS: Persisted = {
   soundEnabled: false,
   volume: 0.6,
   reducedMotion: 'off',
+  captions: true,
 };
 
 export const useSettings = create<SettingsState>((set, get) => ({
@@ -36,8 +39,14 @@ export const useSettings = create<SettingsState>((set, get) => ({
   ...migrate(readJSON<Partial<Persisted>>('settings', {})),
   set: (patch) => {
     set(patch);
-    const { skipIntro, soundEnabled, volume, reducedMotion } = get();
-    writeJSON('settings', { skipIntro, soundEnabled, volume, reducedMotion } satisfies Persisted);
+    const { skipIntro, soundEnabled, volume, reducedMotion, captions } = get();
+    writeJSON('settings', {
+      skipIntro,
+      soundEnabled,
+      volume,
+      reducedMotion,
+      captions,
+    } satisfies Persisted);
   },
 }));
 

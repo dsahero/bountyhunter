@@ -12,7 +12,7 @@ export function EducationPanel() {
   return (
     <>
       {first && (
-        <nav className="step-nav" aria-label="Timeline">
+        <nav className="step-nav" aria-label={lore.a11y.timeline}>
           <span />
           <button
             className="btn btn--holo"

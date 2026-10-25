@@ -16,6 +16,7 @@ import { ResumePanel } from './panels/ResumePanel';
 import { ContactPanel } from './panels/ContactPanel';
 import { LeadershipList } from './LeadershipList';
 import './panels/panels.css';
+import { ShareButton } from '../hud/ShareButton';
 
 const BODIES: Record<StationId, () => JSX.Element | null> = {
   about: AboutPanel,
@@ -64,6 +65,7 @@ export function StationPanel({ flat = false }: { flat?: boolean }) {
           </h2>
         </div>
         <div className="panel__navs">
+          <ShareButton />
           <button className="panel__back" onClick={back}>
             {lore.panel.back} <kbd>⌫</kbd>
           </button>

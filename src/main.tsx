@@ -8,6 +8,15 @@ import '@fontsource/rajdhani/latin-700.css';
 import '@fontsource/share-tech-mono/latin-400.css';
 import './styles/global.css';
 import { AppRoutes } from './app/AppRoutes';
+import { startAnalytics } from './lib/analytics';
+import { takeDeepLink } from './app/deepLinks';
+
+startAnalytics();
+// A shared link (e.g. /projects/dietre) skips the intro; decide before the first paint.
+// ?recruiter on any link (e.g. on a resume) goes straight to the recruiter briefing.
+if (new URLSearchParams(location.search).has('recruiter') && location.pathname !== '/recruiter')
+  history.replaceState(null, '', '/recruiter');
+if (!['/dossier', '/recruiter'].includes(location.pathname)) takeDeepLink();
 
 const container = document.getElementById('root')!;
 const app = (

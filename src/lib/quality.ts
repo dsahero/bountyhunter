@@ -9,7 +9,7 @@
  */
 export type Tier = 'high' | 'low' | 'none';
 
-export interface DeviceHints {
+interface DeviceHints {
   webgl: boolean;
   mobile: boolean;
   cores?: number;
@@ -25,7 +25,7 @@ export function chooseTier({ webgl, mobile, cores, memory }: DeviceHints): Tier 
   return 'high';
 }
 
-export function readDeviceHints(): DeviceHints {
+function readDeviceHints(): DeviceHints {
   let webgl = false;
   try {
     const canvas = document.createElement('canvas');

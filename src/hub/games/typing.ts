@@ -103,7 +103,11 @@ export class Typing implements Game {
       ctx.textAlign = 'center';
       const typed = t.word.startsWith(this.buffer) ? this.buffer : '';
       ctx.fillStyle = COLOR.amber;
-      ctx.fillText(typed, tx - ctx.measureText(t.word).width / 2 + ctx.measureText(typed).width / 2, ty - 6);
+      ctx.fillText(
+        typed,
+        tx - ctx.measureText(t.word).width / 2 + ctx.measureText(typed).width / 2,
+        ty - 6,
+      );
       ctx.fillStyle = COLOR.holo;
       ctx.fillText(t.word, tx, ty - 6);
       ctx.textAlign = 'left';

@@ -15,7 +15,7 @@ import { audio } from './engine';
 import { portfolio } from '../content/portfolio';
 import { useAttack, isEmergency } from '../hub/attack';
 
-export const COCKPIT_MUSIC = { idleSeconds: 6, playSeconds: 180, restSeconds: 30 } as const;
+const COCKPIT_MUSIC = { idleSeconds: 6, playSeconds: 180, restSeconds: 30 } as const;
 
 export function useCockpitMusic(aboard: boolean) {
   const stage = useAttack((s) => s.stage);

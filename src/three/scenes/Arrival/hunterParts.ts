@@ -1,9 +1,10 @@
 /**
  * Naming the hunter's rig, and swapping in a modeled version of it.
  *
- * The procedural hunter (Hunter.tsx) is a tree of pivot groups (Body, Spine,
- * Neck, Head, UpperArm_L, Forearm_L, Hand_L, Hip_L, Knee_L, ...) holding
- * primitive meshes. `nameRig` gives those pivots stable names. The modeled
+ * The procedural hunter (Hunter.tsx) is a tree of named pivot groups (Body,
+ * Spine, Neck, Head, UpperArm_L, Forearm_L, Hand_L, Hip_L, Knee_L, ...)
+ * holding primitive meshes. `nameRig` names its meshes and materials for
+ * export, and any unnamed group. The modeled
  * hunter (public/models/hunter.glb, made by scripts/import-hunter.mjs from a
  * Blender export) is the same set of pivot names, each holding its meshes in
  * that pivot's own frame. `useModeledParts` moves those meshes onto the live
@@ -14,7 +15,7 @@ import { useEffect } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-export const MODEL_URL = '/models/hunter.glb';
+const MODEL_URL = '/models/hunter.glb';
 
 /** Material colors in Hunter.tsx / Helmet.tsx -> names (for Blender's material list). */
 const MATERIAL_NAMES: Record<string, string> = {
@@ -34,28 +35,6 @@ const MATERIAL_NAMES: Record<string, string> = {
   '050506': 'helmet_visor',
   '6e1f2c': 'helmet_stripe',
 };
-
-const near = (a: number, b: number) => Math.abs(a - b) < 2e-3;
-const side = (x: number) => (x < 0 ? 'L' : 'R');
-
-/** A body-part name for a pivot group, from where it sits under its parent. */
-function groupName(g: THREE.Object3D, parent: string, index: number) {
-  const { x, y } = g.position;
-  if (parent === 'Hunter' && index === 0) return 'Body';
-  if (parent === 'Body' && near(Math.abs(x), 0.11)) return `Leg_${side(x)}`;
-  if (parent.startsWith('Leg_')) return `Hip_${parent.slice(-1)}`;
-  if (parent.startsWith('Hip_') && near(y, -0.43)) return `Knee_${parent.slice(-1)}`;
-  if (parent === 'Body' && near(y, 0.98)) return 'Spine';
-  if (parent === 'Spine' && near(Math.abs(x), 0.24)) return `Shoulder_${side(x)}`;
-  if (parent.startsWith('Shoulder_')) return `UpperArm_${parent.slice(-1)}`;
-  if (parent.startsWith('UpperArm_')) return `Forearm_${parent.slice(-1)}`;
-  if (parent.startsWith('Forearm_')) return `Hand_${parent.slice(-1)}`;
-  if (parent === 'Spine' && near(y, 0.6)) return 'Neck';
-  if (parent === 'Neck' && near(y, 0.12)) return 'Head';
-  if (parent === 'Spine' && near(y, 0.29)) return `Jetpack_${side(x)}`;
-  if (parent === 'Head' && near(Math.abs(x), 0.036)) return `Eye_${side(x)}`;
-  return `${parent}_group${index}`;
-}
 
 /**
  * Name every pivot group under `root` (and, with `meshes`, every mesh and
@@ -78,7 +57,8 @@ export function nameRig(root: THREE.Object3D, rootName: string, meshes = false) 
         counts.set(key, n);
         mesh.name = `${key}_${n}`;
       } else {
-        c.name = groupName(c, o.name, i);
+        // Pivots are named in Hunter.tsx; anything unnamed gets a stable fallback.
+        if (!c.name) c.name = `${o.name}_group${i}`;
         visit(c);
       }
     });
@@ -89,7 +69,7 @@ export function nameRig(root: THREE.Object3D, rootName: string, meshes = false) 
 let model: Promise<THREE.Object3D | null> | null = null;
 
 /** The modeled parts (loaded once, shared). Resolves to null if there's no file. */
-export function loadModel() {
+function loadModel() {
   model ??= new GLTFLoader()
     .loadAsync(MODEL_URL)
     .then((gltf) => gltf.scene)

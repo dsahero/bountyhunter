@@ -64,7 +64,7 @@ export function PlainDossier() {
         <h1>{identity.name}</h1>
         <p className="plain__alias">a.k.a. “{identity.alias}”</p>
         <p className="plain__tagline">{identity.tagline}</p>
-        <nav aria-label="Contact and resume" className="plain__links">
+        <nav aria-label={lore.a11y.contactLinks} className="plain__links">
           <a href={`mailto:${contact.email}`}>{contact.email}</a>
           <a href={contact.github}>GitHub</a>
           <a href={contact.linkedin}>LinkedIn</a>
@@ -77,7 +77,7 @@ export function PlainDossier() {
             </a>
           ))}
         </nav>
-        <nav aria-label="Sections" className="plain__toc">
+        <nav aria-label={lore.a11y.sections} className="plain__toc">
           <a href="#about">About</a>
           <a href="#education">Education</a>
           <a href="#experience">Experience</a>

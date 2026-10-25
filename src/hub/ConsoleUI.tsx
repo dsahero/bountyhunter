@@ -16,7 +16,7 @@ export function ConsoleUI() {
   const call = useHub((s) => s.call);
   const station = useHub((s) => s.station);
   const holosOff = useHub((s) => s.holosOff);
-  const items = consoleItems(mode, !!call, holosOff);
+  const items = consoleItems(mode, !!call, holosOff, 0, false);
   const { identity } = portfolio;
   const c = lore.console;
 

@@ -69,7 +69,7 @@ function StepNav({ index, charges }: { index: number; charges: ReturnType<typeof
   const next = charges[index + 1];
   const hub = useHub.getState;
   return (
-    <nav className="step-nav" aria-label="Timeline">
+    <nav className="step-nav" aria-label={lore.a11y.timeline}>
       <button
         className="btn btn--ghost"
         onClick={() => (prev ? hub().selectCharge(prev.id) : hub().open('education'))}

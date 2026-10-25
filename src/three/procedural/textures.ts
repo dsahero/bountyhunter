@@ -86,69 +86,6 @@ export const hullTexture = memo(() => {
   return toTexture(c, 1);
 });
 
-/** Landing pad: scuffed concrete, hazard ring, guide lines. */
-export const padTexture = memo(() => {
-  const size = 1024;
-  const [c, ctx] = canvas(size);
-  const rand = seeded(11);
-  const mid = size / 2;
-  ctx.fillStyle = '#5b544c';
-  ctx.fillRect(0, 0, size, size);
-  noise(ctx, size, rand, 0.2);
-
-  // Scorch mark under the engines.
-  const scorch = ctx.createRadialGradient(mid, mid, 10, mid, mid, 380);
-  scorch.addColorStop(0, 'rgba(15,12,10,0.75)');
-  scorch.addColorStop(1, 'rgba(15,12,10,0)');
-  ctx.fillStyle = scorch;
-  ctx.fillRect(0, 0, size, size);
-
-  // Hazard ring: alternating amber/black dashes.
-  const r = size * 0.46;
-  const dashes = 64;
-  ctx.lineWidth = 26;
-  for (let i = 0; i < dashes; i++) {
-    ctx.strokeStyle = i % 2 ? '#1a1714' : '#d9962b';
-    ctx.beginPath();
-    ctx.arc(mid, mid, r, (i / dashes) * Math.PI * 2, ((i + 1) / dashes) * Math.PI * 2);
-    ctx.stroke();
-  }
-  // Guide lines and an inner circle.
-  ctx.strokeStyle = 'rgba(230,220,200,0.35)';
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.arc(mid, mid, size * 0.3, 0, Math.PI * 2);
-  ctx.stroke();
-  for (let i = 0; i < 4; i++) {
-    const a = (i * Math.PI) / 2 + Math.PI / 4;
-    ctx.beginPath();
-    ctx.moveTo(mid + Math.cos(a) * size * 0.32, mid + Math.sin(a) * size * 0.32);
-    ctx.lineTo(mid + Math.cos(a) * size * 0.43, mid + Math.sin(a) * size * 0.43);
-    ctx.stroke();
-  }
-  return toTexture(c, 1);
-});
-
-/** Wind-swept sand for the ground around the pad. */
-export const sandTexture = memo(() => {
-  const size = 512;
-  const [c, ctx] = canvas(size);
-  const rand = seeded(23);
-  ctx.fillStyle = '#7a5a3e';
-  ctx.fillRect(0, 0, size, size);
-  for (let i = 0; i < 200; i++) {
-    ctx.strokeStyle = `rgba(${rand() > 0.5 ? '150,110,75' : '90,62,40'},0.25)`;
-    ctx.lineWidth = 1 + rand() * 3;
-    const y = rand() * size;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.bezierCurveTo(size * 0.3, y + 10, size * 0.6, y - 10, size, y);
-    ctx.stroke();
-  }
-  noise(ctx, size, rand, 0.15);
-  return toTexture(c, 24);
-});
-
 /** Soft round sprite for steam, dust, and glows. */
 export const softDotTexture = memo(() => {
   const size = 128;

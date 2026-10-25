@@ -6,10 +6,12 @@ import { skipStage, terminalGame } from '../src/hub/games/terminal';
 import { useUnlocks } from '../src/state/unlocks';
 
 /** A small seeded generator so the games are reproducible. */
-const rng = (seed = 1) => () => {
-  seed = (seed * 16807) % 2147483647;
-  return (seed - 1) / 2147483646;
-};
+const rng =
+  (seed = 1) =>
+  () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
 
 describe('firewall', () => {
   it('wins after picking the matching code each round', () => {
@@ -58,7 +60,17 @@ describe('cargo stack', () => {
     for (let r = BOARD.rows - CARGO_ROWS_TO_CLEAR - 1; r < BOARD.rows; r++) {
       g.board[r] = Array.from({ length: BOARD.cols }, (_, c) => (c === 0 ? -1 : 1));
     }
-    g.piece = { cells: [[0, 0], [0, 1], [0, 2], [0, 3]], x: 0, y: 0, shape: 0 };
+    g.piece = {
+      cells: [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [0, 3],
+      ],
+      x: 0,
+      y: 0,
+      shape: 0,
+    };
     g.key(' ');
     expect(g.cleared).toBeGreaterThanOrEqual(CARGO_ROWS_TO_CLEAR);
     expect(g.done).toBe(true);

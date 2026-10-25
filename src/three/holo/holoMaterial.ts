@@ -8,7 +8,6 @@
  */
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { useMemo } from 'react';
 
 export const HOLO_BLUE = '#5fd4ff';
 
@@ -80,10 +79,6 @@ export function makeHoloMaterial(
 }
 
 export type HoloMaterial = ReturnType<typeof makeHoloMaterial>;
-
-export function useHoloMaterial(color: THREE.ColorRepresentation = HOLO_BLUE, opacity = 1) {
-  return useMemo(() => makeHoloMaterial(color, opacity), [color, opacity]);
-}
 
 /**
  * Eases a set of hologram materials toward a target opacity each frame:

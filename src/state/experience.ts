@@ -16,15 +16,16 @@ import { useSettings } from './settings';
 export type Phase = 'gate' | 'title' | 'crawl' | 'arrival' | 'hub';
 
 export const PHASE_ORDER_3D: readonly Phase[] = ['gate', 'title', 'crawl', 'arrival', 'hub'];
-export const PHASE_ORDER_2D: readonly Phase[] = ['gate', 'title', 'crawl', 'hub'];
+const PHASE_ORDER_2D: readonly Phase[] = ['gate', 'title', 'crawl', 'hub'];
 
-export interface ExperienceState {
+interface ExperienceState {
   phase: Phase;
   order: readonly Phase[];
   /** Call once at startup with whether the device can render the 3D scenes. */
   configure: (opts: { webgl: boolean }) => void;
   advance: () => void;
   skip: () => void;
+  jumpIn: () => void;
   /** Replay the intro from the beginning (and stop auto-skipping). */
   replay: () => void;
 }
@@ -47,6 +48,8 @@ export const useExperience = create<ExperienceState>((set, get) => ({
     useSettings.getState().set({ skipIntro: true });
     set({ phase: 'hub' });
   },
+  /** Straight to the cockpit for a shared link (this visit only; nothing is saved). */
+  jumpIn: () => set({ phase: 'hub' }),
   replay: () => {
     useSettings.getState().set({ skipIntro: false });
     set({ phase: 'gate' });

@@ -688,3 +688,112 @@
   height: 110px;
   margin: 0.4rem auto;
 }
+
+/* Achievements board */
+.achievements {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.achievement {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(95, 212, 255, 0.18);
+  border-radius: 6px;
+  opacity: 0.55;
+}
+
+.achievement--on {
+  opacity: 1;
+  border-color: rgba(255, 179, 71, 0.6);
+  background: rgba(255, 179, 71, 0.08);
+}
+
+.achievement__icon {
+  font-size: 1.5rem;
+  width: 2rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.achievement__desc {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted, #9fb0bd);
+}
+
+/* Guestbook (the hunter's log) */
+.guestbook__form {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.guestbook__form label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.guestbook__form input,
+.guestbook__form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(95, 212, 255, 0.4);
+  border-radius: 6px;
+  background: rgba(3, 18, 26, 0.85);
+  color: inherit;
+  font: inherit;
+  font-size: 1rem; /* 16px: no zoom-on-focus on phones */
+}
+
+.guestbook__trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+}
+
+.guestbook__note {
+  margin: 0;
+  color: var(--amber, #ffb347);
+}
+
+.guestbook__list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.guestbook__list li {
+  border-left: 2px solid rgba(95, 212, 255, 0.4);
+  padding-left: 0.7rem;
+}
+
+.guestbook__message {
+  margin: 0 0 0.2rem;
+  overflow-wrap: anywhere;
+}
+
+/* Project media in a transmission */
+.transmission__media {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+}
+
+.transmission__media img,
+.transmission__media video {
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid rgba(95, 212, 255, 0.3);
+  background: #05080b;
+}

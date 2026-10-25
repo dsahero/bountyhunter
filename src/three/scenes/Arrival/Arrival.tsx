@@ -33,9 +33,10 @@ import { makePath } from '../../camera/path';
 import { cruise } from '../../sky/motion';
 import { DUCT, EYE, HELMET_ON_SHELF } from '../../../hub/layout';
 import { ARRIVAL, T_DUCT, T_EYES, T_SHOULDER } from '../../../hub/arrivalTiming';
-import { consoleLook } from '../../../state/hub';
+import { consoleLook } from '../../../state/hubView';
 import { useExperience } from '../../../state/experience';
 import { useCinema } from '../../../state/cinema';
+import { unlockAchievement } from '../../../state/achievements';
 import { useReducedMotion } from '../../../lib/reducedMotion';
 import { cue } from '../../../audio/cues';
 import { audio } from '../../../audio/engine';
@@ -305,6 +306,7 @@ export function Arrival({ started }: { started: boolean }) {
       paused: true,
       onComplete: () => {
         resumeAt = 0;
+        unlockAchievement('arrived');
         useExperience.getState().advance();
       },
     });

@@ -5,6 +5,7 @@
  */
 import { COLOR, FONT, roundRect, type Region } from '../../three/ui/canvasKit';
 import type { Game, Rand } from './game';
+import { portfolio } from '../../content/portfolio';
 
 const COLS = 4;
 const ROWS = 3;
@@ -53,7 +54,12 @@ export class Firewall implements Game {
   }
 
   key(key: string) {
-    const moves: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -COLS, ArrowDown: COLS };
+    const moves: Record<string, number> = {
+      ArrowLeft: -1,
+      ArrowRight: 1,
+      ArrowUp: -COLS,
+      ArrowDown: COLS,
+    };
     if (key in moves) {
       this.cursor = (this.cursor + moves[key]! + this.cells.length) % this.cells.length;
       return true;
@@ -80,7 +86,7 @@ export class Firewall implements Game {
     const regions: Region[] = [];
     ctx.font = `16px ${FONT.mono}`;
     ctx.fillStyle = COLOR.muted;
-    ctx.fillText('INTRUDER SIGNATURE', x, y + 16);
+    ctx.fillText(portfolio.site.terminalUi.intruder, x, y + 16);
     ctx.font = `700 34px ${FONT.mono}`;
     ctx.fillStyle = this.flash > 0 ? COLOR.imperial : COLOR.amber;
     ctx.fillText(this.target, x + 190, y + 22);
@@ -94,7 +100,13 @@ export class Firewall implements Game {
     const cw = (w - (COLS - 1) * 8) / COLS;
     const ch = (h - 40 - (ROWS - 1) * 8) / ROWS;
     this.cells.forEach((code, i) => {
-      const r = { id: `cell:${i}`, x: x + (i % COLS) * (cw + 8), y: gy + Math.floor(i / COLS) * (ch + 8), w: cw, h: ch };
+      const r = {
+        id: `cell:${i}`,
+        x: x + (i % COLS) * (cw + 8),
+        y: gy + Math.floor(i / COLS) * (ch + 8),
+        w: cw,
+        h: ch,
+      };
       roundRect(ctx, r.x, r.y, r.w, r.h, 6);
       ctx.fillStyle = i === this.cursor ? 'rgba(255,179,71,0.22)' : 'rgba(95,212,255,0.07)';
       ctx.fill();

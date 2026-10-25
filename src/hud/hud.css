@@ -201,3 +201,71 @@
   animation: none;
   opacity: 0.8;
 }
+
+/* Phones: HUD controls fold behind a Settings button */
+.hud__menu {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .hud__menu {
+    display: inline-flex;
+  }
+  .hud__controls > :not(.hud__menu) {
+    display: none;
+  }
+  .hud__controls.is-open {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hud__controls.is-open > * {
+    display: inline-flex;
+  }
+}
+
+/* Touch controls for the defense-terminal minigames */
+.terminal-touch {
+  position: fixed;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 41;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.4rem;
+  pointer-events: auto;
+  width: min(560px, calc(100vw - 24px));
+  justify-content: center;
+}
+
+.terminal-touch__btn {
+  flex: 1;
+  min-height: 56px;
+  border: 1px solid rgba(255, 106, 77, 0.7);
+  border-radius: 10px;
+  background: rgba(30, 6, 6, 0.85);
+  color: #ffd0c0;
+  font: 700 1.1rem var(--font-mono);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.terminal-touch__btn:active {
+  background: rgba(255, 106, 77, 0.35);
+}
+
+.terminal-touch__type {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 1rem;
+  border: 1px solid rgba(255, 179, 71, 0.8);
+  border-radius: 10px;
+  background: rgba(20, 8, 2, 0.9);
+  color: #ffb347;
+  font: 1.1rem var(--font-mono);
+}
+
+.has-touch-controls .captions {
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 70px);
+}

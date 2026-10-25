@@ -27,7 +27,7 @@ export const ARRIVAL = {
 export const T_DUCT = ARRIVAL.fly + ARRIVAL.path;
 export const T_SHOULDER = T_DUCT + ARRIVAL.roomIn;
 export const T_EYES = T_SHOULDER + ARRIVAL.hunter;
-export const T_END = T_EYES + ARRIVAL.roomOut;
+const T_END = T_EYES + ARRIVAL.roomOut;
 
 /** Real-world seconds the arrival takes. */
 export const ARRIVAL_SECONDS = T_END / ARRIVAL.timeScale;

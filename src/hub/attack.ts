@@ -18,10 +18,11 @@ import { audio } from '../audio/engine';
 import { useHub } from '../state/hub';
 import { useLook } from '../state/look';
 import { useUnlocks } from '../state/unlocks';
+import { unlockAchievement } from '../state/achievements';
 import { ANCHORS, lookAtPoint } from './layout';
 import { startRumbles, stopRumbles } from './rumble';
 
-export type AttackStage = 'idle' | 'guitar' | 'incoming' | 'alert' | 'terminal' | 'won';
+type AttackStage = 'idle' | 'guitar' | 'incoming' | 'alert' | 'terminal' | 'won';
 export const GAMES = ['firewall', 'typing', 'cargo'] as const;
 export type GameId = (typeof GAMES)[number];
 
@@ -92,6 +93,7 @@ export const useAttack = create<AttackState>((set, get) => ({
     later(600, () => cue('chime', site.captions.win));
     caption(site.attack.won, 6000);
     useUnlocks.getState().unlock('classified');
+    unlockAchievement('defender');
     later(6500, () => set({ stage: 'idle', game: 0 }));
   },
 

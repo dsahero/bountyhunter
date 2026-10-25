@@ -21,11 +21,10 @@ export const CONSOLE = {
   tilt: -0.85,
   width: 1.3,
   height: 0.72,
-  /** On-screen UI size in CSS px; 1px = HTML_SCALE meters. */
+  /** The screen's canvas UI size in px (drawn into a texture across `width` meters). */
   uiWidth: 650,
   uiHeight: 360,
 };
-export const HTML_SCALE = CONSOLE.width / CONSOLE.uiWidth;
 
 /** Side consoles run along both walls; their top surface height. */
 export const SIDE_TOP = 0.86;
@@ -71,7 +70,7 @@ export function lookAtPoint([x, y, z]: Vec3): { yaw: number; pitch: number } {
  * behind the bulkhead, so they get none. Posters fill these in content
  * order (the classified one last); add slots here if you add more projects.
  */
-export interface PosterSlot {
+interface PosterSlot {
   position: Vec3;
   rotationY: number;
 }
@@ -92,6 +91,9 @@ export const POSTER_SLOTS: readonly PosterSlot[] = [
   back(-0.6, LOWER),
   back(0.98, LOWER),
   back(-0.98, LOWER),
+  // Low on the bulkhead either side of the doorway
+  { position: [0.98, 0.78, 0.955], rotationY: Math.PI },
+  { position: [-0.98, 0.78, 0.955], rotationY: Math.PI },
 ];
 
 export function posterSlot(index: number): PosterSlot {
@@ -120,7 +122,7 @@ export const GUITAR = { position: [0, 0, 2.0] as Vec3, rotationY: Math.PI - 0.5 
 export const WEAPON_PLATE = { position: [0.55, 1.9, -0.68] as Vec3, tilt: -0.55 };
 
 /** A point on the weapon plate (plate-local), in world space. */
-export function onWeaponPlate(x: number, y: number, z: number): Vec3 {
+function onWeaponPlate(x: number, y: number, z: number): Vec3 {
   const [px, py, pz] = WEAPON_PLATE.position;
   const c = Math.cos(WEAPON_PLATE.tilt);
   const s = Math.sin(WEAPON_PLATE.tilt);

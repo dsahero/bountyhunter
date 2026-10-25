@@ -14,7 +14,7 @@ import { useReducedMotion } from '../../lib/reducedMotion';
 import { cruise } from './motion';
 
 /** True once the camera is on the cockpit set (the flyby happens 10 km away). */
-export const isAboard = (camera: Camera) => camera.position.lengthSq() < 1e4;
+const isAboard = (camera: Camera) => camera.position.lengthSq() < 1e4;
 
 type V3 = readonly [number, number, number];
 

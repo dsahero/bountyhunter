@@ -39,7 +39,7 @@ export function useAudioSync() {
 
   const stage = useAttack((s) => s.stage);
   useEffect(() => {
-    audio.loop('alarm', isEmergency(stage) ? portfolio.site.audio.alarm : null);
+    audio.alarm(isEmergency(stage) ? portfolio.site.audio.alarm : '');
   }, [stage]);
 
   useEffect(() => {

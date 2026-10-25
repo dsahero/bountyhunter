@@ -280,3 +280,12 @@
   z-index: 40;
   pointer-events: auto;
 }
+
+/* "Recruiter? Skip to the briefing" on the start screen */
+.gate__recruiter {
+  display: inline-block;
+  margin: 0.4rem 0 1rem;
+  color: var(--amber, #ffb347);
+  font: 0.95rem var(--font-mono);
+  text-underline-offset: 3px;
+}

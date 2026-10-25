@@ -15,7 +15,10 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "export:hunter": "node scripts/export-hunter.mjs",
-    "import:hunter": "node scripts/import-hunter.mjs"
+    "import:hunter": "node scripts/import-hunter.mjs",
+    "sync:github": "node scripts/sync-github.mjs",
+    "capture:media": "node scripts/capture-media.mjs",
+    "og:image": "node scripts/og-image.mjs"
   },
   "dependencies": {
     "@fontsource/orbitron": "^5.1.0",
@@ -24,6 +27,7 @@
     "@react-three/drei": "^9.117.3",
     "@react-three/fiber": "^8.17.10",
     "@react-three/postprocessing": "^2.16.3",
+    "@vercel/analytics": "^1.4.1",
     "gsap": "^3.12.5",
     "postprocessing": "^6.36.4",
     "react": "^18.3.1",

@@ -17,6 +17,7 @@
  * ============================================================================
  */
 import type { Portfolio } from './schema';
+import { withGitHub } from './github';
 
 export const portfolio: Portfolio = {
   identity: {
@@ -523,6 +524,7 @@ export const portfolio: Portfolio = {
       media: [],
       bountyValue: 250_000,
       posterStyle: 'starburst',
+      posterPalette: 'rust',
       classified: false,
     },
     {
@@ -541,6 +543,7 @@ export const portfolio: Portfolio = {
       media: [],
       bountyValue: 220_000,
       posterStyle: 'diagonal',
+      posterPalette: 'navy',
       classified: false,
     },
     {
@@ -558,6 +561,7 @@ export const portfolio: Portfolio = {
       media: [],
       bountyValue: 300_000,
       posterStyle: 'silhouette',
+      posterPalette: 'parchment',
       classified: false,
     },
     {
@@ -577,9 +581,16 @@ export const portfolio: Portfolio = {
         { label: 'Live site', href: 'https://dietre.us' },
         { label: 'Source', href: 'https://github.com/dsahero/dietre' },
       ],
-      media: [],
+      media: [
+        {
+          src: '/media/dietre.mp4',
+          still: '/media/dietre.jpg',
+          alt: 'The DietRe site: “a smarter way to cater”, scrolling through its features.',
+        },
+      ],
       bountyValue: 280_000,
-      posterStyle: 'grid',
+      posterStyle: 'planet',
+      posterPalette: 'jungle',
       classified: false,
     },
     {
@@ -596,34 +607,35 @@ export const portfolio: Portfolio = {
       links: [{ label: 'Source', href: 'https://github.com/dsahero/simplystocked' }],
       media: [],
       bountyValue: 200_000,
-      posterStyle: 'diagonal',
+      posterStyle: 'halftone',
+      posterPalette: 'sand',
       classified: false,
     },
     {
       id: 'studyscout',
       title: 'StudyScout @ VT',
       slogan: 'NO REBEL STUDIES ALONE.',
-      oneLiner: 'HackViolet project that connects study partners: create a study session, others join.',
+      oneLiner:
+        'HackViolet project that connects study partners: create a study session, others join.',
       description: [
         'Students post study sessions that others can browse and join; sessions are stored in MongoDB.',
         'Built at HackViolet with Sriram Pasupunuti and Mitchell Gallehr.',
       ],
       stack: ['Python', 'MongoDB'],
       role: 'HackViolet team, 2025',
-      links: [
-        { label: 'Live app', href: 'https://studybuddy-vt.streamlit.app/' },
-        { label: 'Source', href: 'https://github.com/dsahero/studyscout' },
-      ],
+      links: [{ label: 'Source', href: 'https://github.com/dsahero/studyscout' }],
       media: [],
       bountyValue: 120_000,
-      posterStyle: 'starburst',
+      posterStyle: 'emblem',
+      posterPalette: 'violet',
       classified: false,
     },
     {
       id: 'hokies-way-home',
       title: "Hokies' Way Home",
       slogan: 'FIND YOUR HOME AWAY FROM HOME.',
-      oneLiner: 'A student-housing finder for Blacksburg: listings with prices, amenities, and distance to campus.',
+      oneLiner:
+        'A student-housing finder for Blacksburg: listings with prices, amenities, and distance to campus.',
       description: [
         'A Flask web app for comparing off-campus housing: bed/bath counts, prices, utilities, amenities, and bus-stop and campus distances, with accounts and saved places.',
         'Hackathon team project with Ivanna, Delara, and Carter.',
@@ -633,7 +645,8 @@ export const portfolio: Portfolio = {
       links: [{ label: 'Source', href: 'https://github.com/dsahero/hokiesWayHome' }],
       media: [],
       bountyValue: 90_000,
-      posterStyle: 'silhouette',
+      posterStyle: 'ship',
+      posterPalette: 'crimson',
       classified: false,
     },
     {
@@ -650,7 +663,8 @@ export const portfolio: Portfolio = {
       links: [],
       media: [],
       bountyValue: 999_999,
-      posterStyle: 'grid',
+      posterStyle: 'target',
+      posterPalette: 'neon',
       classified: true,
     },
   ],
@@ -663,6 +677,116 @@ export const portfolio: Portfolio = {
   },
 
   resume: { pdf: '/resume.pdf', updated: 'Oct 2026' },
+
+  /**
+   * The recruiter briefing (/recruiter): a fast, no-intro page built for a
+   * 60-second scan. Every number below comes from a line on the resume.
+   */
+  recruiter: {
+    headline: 'Software engineer: full-stack systems and applied machine learning',
+    status: 'Seeking Summer 2027 software engineering roles', // PLACEHOLDER: confirm
+    availability: 'Available Summer 2027 · B.S. expected May 2027', // PLACEHOLDER: confirm
+    location: 'Blacksburg, VA · open to relocation', // PLACEHOLDER: confirm relocation
+    authorization: 'Active Secret clearance',
+    pitch: [
+      'Computer Science senior at Virginia Tech (Data-Centric Computing, Math minor) who ships production software and research-grade ML.',
+      'At NSWC Dahlgren I owned a full-stack feature end to end; at Neocis I traced a manufacturing yield problem to its root cause; at the Hume Center I train multi-agent RL models for missile defense.',
+      'I also run HackViolet, Virginia Tech’s 500+ person hackathon.',
+    ],
+    highlights: [
+      {
+        value: '15%→50%',
+        label: 'Production yield',
+        detail:
+          'Found the misread threshold behind a robotic-surgery part shortfall at Neocis; the fix more than tripled valid pairing.',
+      },
+      {
+        value: '1 click',
+        label: 'Manual process, automated',
+        detail:
+          'Turned a hidden multi-step process into a near-instant workflow at NSWC Dahlgren, with 100% unit test coverage.',
+      },
+      {
+        value: '500+',
+        label: 'Hackers led',
+        detail:
+          'Executive Director of HackViolet: $15K+ budget, sponsors, judging, and a growing board.',
+      },
+      {
+        value: '115+',
+        label: 'Teams beaten',
+        detail: 'SpeakEasy, an AI public-speaking coach, won among 115+ teams.',
+      },
+      {
+        value: '3.74',
+        label: 'Major GPA',
+        detail: 'Dean’s List four semesters running.',
+      },
+      {
+        value: 'Secret',
+        label: 'Active clearance',
+        detail: 'Ready for defense and national-security work.',
+      },
+    ],
+    focusAreas: [
+      {
+        id: 'fullstack',
+        label: 'Full-stack',
+        skills: [
+          'TypeScript',
+          'JavaScript',
+          'React',
+          'Angular',
+          'RxJS',
+          'Java',
+          'SQL',
+          'Flask',
+          'MongoDB',
+          'Elasticsearch',
+        ],
+        keywords: ['full-stack', 'frontend', 'microservices', 'interfaces', 'web', 'extension'],
+      },
+      {
+        id: 'ml',
+        label: 'ML / AI',
+        skills: ['Python', 'PyTorch', 'scikit-learn', 'NumPy', 'pandas', 'OpenCV'],
+        keywords: [
+          'machine learning',
+          'reinforcement learning',
+          'AI',
+          'model',
+          'deep learning',
+          'K-Nearest',
+          'Gemini',
+          'Whisper',
+        ],
+      },
+      {
+        id: 'data',
+        label: 'Data',
+        skills: ['Python', 'SQL', 'pandas', 'NumPy', 'Elasticsearch', 'MongoDB'],
+        keywords: ['statistical', 'analysis', 'metrics', 'yield', 'data', 'JMP', 'leaderboards'],
+      },
+      {
+        id: 'platform',
+        label: 'Systems & DevOps',
+        skills: ['C', 'C++', 'C#', 'Rust', 'Docker', 'Kubernetes', 'AWS', 'RabbitMQ', 'Git'],
+        keywords: ['Kubernetes', 'Docker', 'deployed', 'architecture', 'backend', 'distributed'],
+      },
+    ],
+    awards: [
+      'SpeakEasy: hackathon winner among 115+ teams (Sep 2025)',
+      'Cookie Crumblr: 2nd overall (Mar 2026)',
+      'Poster, “Multi-Agent Reinforcement Learning for Distributed Missile Defense”, Hume Center Colloquium (Apr 2026)',
+      'Dean’s List: Spring 2024, Spring 2025, Fall 2025, Spring 2026',
+    ],
+    lookingFor: [
+      'Software engineering roles where I own features end to end, from data model to UI.', // PLACEHOLDER: in your words
+      'Teams working on ML systems, defense, or data-heavy products.',
+      'Mentorship, code review, and a high bar for shipping.',
+    ],
+    scheduleUrl: '', // optional: e.g. a Calendly link
+  },
 
   /**
    * ============================================================================
@@ -737,6 +861,9 @@ export const portfolio: Portfolio = {
       motion: 'Motion',
       motionFull: 'full',
       motionReduced: 'reduced',
+      captions: 'Captions',
+      settings: 'Settings',
+      recruiter: 'Recruiter briefing',
       replay: 'Replay intro',
       plainDossier: 'Plain dossier',
       skipIntro: 'Skip intro ⏭',
@@ -753,6 +880,14 @@ export const portfolio: Portfolio = {
       holoOff: 'Holo off',
       holoOn: 'Holo on',
       objects: 'Things in the cockpit',
+      achievements: 'Achievements',
+      guestbook: "Hunter's log",
+      guestbookSub: 'Guestbook',
+      prevPage: '◂',
+      nextPage: '▸',
+      page: 'Page',
+      share: 'Share link',
+      shared: 'Link copied',
       contactsTitle: 'Contacts',
       hangUp: 'Hang up',
       fireBlaster: 'Fire main blaster',
@@ -836,6 +971,153 @@ export const portfolio: Portfolio = {
       'K-0D3: Is that a guitar back there?',
     ],
 
+    /** The deployed site (from the repo's homepage on GitHub); used for link previews. */
+    siteUrl: 'https://bountyhunter-lilac.vercel.app',
+    achievements: [
+      {
+        id: 'arrived',
+        icon: '🛬',
+        title: 'Touchdown',
+        description: 'Watch the whole arrival, from the crawl to the pilot’s seat.',
+      },
+      {
+        id: 'all-stations',
+        icon: '🗂',
+        title: 'Full Dossier',
+        description: 'Open every file on the main computer.',
+      },
+      {
+        id: 'all-posters',
+        icon: '📜',
+        title: 'Propaganda Collector',
+        description: 'Read every poster in the cargo hold.',
+      },
+      {
+        id: 'six',
+        icon: '👀',
+        title: 'Check Your Six',
+        description: 'Turn around and look into the cargo hold.',
+      },
+      { id: 'cat', icon: '🐱', title: 'Purr-sonal Call', description: 'Call Sniffles.' },
+      {
+        id: 'voicemail',
+        icon: '📟',
+        title: 'Leave a Message',
+        description: 'Get sent to someone’s voicemail.',
+      },
+      {
+        id: 'all-voicemails',
+        icon: '📞',
+        title: 'Phone Tree',
+        description: 'Hear every voicemail greeting in your contacts.',
+      },
+      { id: 'blaster', icon: '🔴', title: 'Warning Shot', description: 'Fire the main blaster.' },
+      { id: 'torpedo', icon: '🔵', title: 'Torpedo Away', description: 'Launch a torpedo.' },
+      {
+        id: 'helmet',
+        icon: '⛑',
+        title: 'Your Bucket',
+        description: 'Take a good look at your helmet.',
+      },
+      {
+        id: 'tchotchkes',
+        icon: '🎲',
+        title: 'Hoarder',
+        description: 'Inspect every tchotchke in the cockpit.',
+      },
+      {
+        id: 'buttons',
+        icon: '🔘',
+        title: 'What Does This Button Do?',
+        description: 'Press 10 of the mystery buttons.',
+      },
+      { id: 'holo-off', icon: '🌑', title: 'Lights Out', description: 'Switch the holograms off.' },
+      {
+        id: 'defender',
+        icon: '🛡',
+        title: 'Ship Defender',
+        description: 'Beat the defense terminal.',
+      },
+      { id: 'resume', icon: '📄', title: 'Paper Trail', description: 'Open the resume.' },
+      {
+        id: 'guestbook',
+        icon: '✍',
+        title: 'Signed the Log',
+        description: 'Leave a message in the hunter’s log.',
+      },
+      {
+        id: 'completionist',
+        icon: '🏆',
+        title: 'Most Wanted',
+        description: 'Unlock every other achievement.',
+      },
+    ],
+    achievementsText: {
+      intro:
+        'Bounty Guild commendations, earned by snooping around this cockpit. Progress is saved on this device.',
+      toast: '[Achievement unlocked]',
+      progress: 'Unlocked',
+      locked: 'Locked',
+      reset: 'Reset progress',
+    },
+    guestbook: {
+      intro:
+        'Every hunter who boards this ship leaves a line in the log. Leave yours (public, so be kind).',
+      name: 'Your name or call sign',
+      message: 'Message',
+      sign: 'Sign the log',
+      signing: 'Transmitting…',
+      thanks: 'Logged. Thanks for stopping by, hunter.',
+      empty: 'No entries yet. Be the first.',
+      offline: 'The comm relay is offline right now, so the log can’t be reached. Try again later.',
+      tooFast: 'Easy, hunter. One entry every 30 seconds.',
+      invalid: 'Add a name and a message (no links, please).',
+    },
+    a11y: {
+      timeline: 'Timeline',
+      introControls: 'Intro controls',
+      openingCrawl: 'Opening crawl',
+      contactLinks: 'Contact and resume',
+      sections: 'Sections',
+      typeCodes: 'Type the guidance codes',
+      cargoControls: 'Cargo controls',
+    },
+    terminalUi: {
+      intruder: 'INTRUDER SIGNATURE',
+      hold: 'HOLD [C]',
+      next: 'NEXT',
+      cargoHelp: ['←/→ MOVE', '↑ ROTATE', '↓ DROP', 'SPACE SLAM'],
+      typePlaceholder: 'Type the codes…',
+      touch: {
+        hold: 'HOLD',
+        slam: 'SLAM',
+        holdAria: 'Hold piece',
+        leftAria: 'Move left',
+        rotateAria: 'Rotate',
+        rightAria: 'Move right',
+        dropAria: 'Drop',
+        slamAria: 'Slam down',
+      },
+    },
+    githubPosters: {
+      slogans: [
+        'BUILT IN THE SHADOWS.',
+        'ONE COMMIT AT A TIME.',
+        'THE REBELLION SHIPS.',
+        'FROM THE OUTER RIM.',
+        'CODE IS RESISTANCE.',
+      ],
+      live: 'Live',
+      source: 'Source',
+      role: 'Personal project, updated {DATE}',
+    },
+    posterStamps: [
+      'APPROVED BY THE CELL',
+      'BANNED IN 7 SYSTEMS',
+      'REBEL ISSUE',
+      'SEEN ON CORUSCANT',
+      'DO NOT REMOVE',
+    ],
     buttonQuips: [
       'What does this button do?',
       'What does this button do? (Nothing. Probably.)',
@@ -844,7 +1126,8 @@ export const portfolio: Portfolio = {
     props: {
       levers: {
         label: 'Throttle levers',
-        blurb: 'Three throttles, one for each engine. The middle one sticks. You have learned to kick it.',
+        blurb:
+          'Three throttles, one for each engine. The middle one sticks. You have learned to kick it.',
       },
       switches: {
         label: 'Flip switches',
@@ -852,7 +1135,8 @@ export const portfolio: Portfolio = {
       },
       dice: {
         label: 'Fuzzy dice',
-        blurb: 'Won in a sabacc game on a moon you swore you would never go back to. You went back.',
+        blurb:
+          'Won in a sabacc game on a moon you swore you would never go back to. You went back.',
       },
       mug: {
         label: 'Caf mug',
@@ -860,15 +1144,18 @@ export const portfolio: Portfolio = {
       },
       plant: {
         label: 'Cockpit plant',
-        blurb: 'A hardy succulent from the homeworld. It has survived two hyperspace jumps and one blaster fire. Water weekly.',
+        blurb:
+          'A hardy succulent from the homeworld. It has survived two hyperspace jumps and one blaster fire. Water weekly.',
       },
       bobble: {
         label: 'Bobble droid',
-        blurb: 'A souvenir astromech. It nods yes to everything, which makes it the best co-pilot you have had.',
+        blurb:
+          'A souvenir astromech. It nods yes to everything, which makes it the best co-pilot you have had.',
       },
       picture: {
         label: 'Photo: you and Sniffles',
-        blurb: 'The only picture on the ship. Sniffles refused to look at the camera. You refused to take it again.',
+        blurb:
+          'The only picture on the ship. Sniffles refused to look at the camera. You refused to take it again.',
       },
     },
     helmet: {
@@ -878,10 +1165,108 @@ export const portfolio: Portfolio = {
 
     /** The Call button's contact list. `kind: 'cat'` starts a holocall; anything else goes to voicemail. */
     contacts: [
-      { name: 'Darth Vader', icon: '⚫', kind: 'voicemail' },
-      { name: 'Purge Trooper Cody', icon: '⛑', kind: 'voicemail' },
-      { name: 'Boba Fett', icon: '🚀', kind: 'voicemail' },
       { name: 'Sniffles (your cat)', icon: '🐱', kind: 'cat' },
+      {
+        name: 'Darth Vader',
+        icon: '⚫',
+        kind: 'voicemail',
+        voice: 'deep',
+        greeting: [
+          'This is Lord Vader. I am… unavailable.',
+          'I find your lack of a message disturbing. Do not make that mistake twice.',
+        ],
+      },
+      {
+        name: 'Purge Trooper Cody',
+        icon: '⛑',
+        kind: 'voicemail',
+        voice: 'human',
+        greeting: [
+          'Commander Cody. Execute Order… no. Wrong recording.',
+          'State your clearance and your business. It will be done, my lord.',
+        ],
+      },
+      {
+        name: 'Boba Fett',
+        icon: '🚀',
+        kind: 'voicemail',
+        voice: 'deep',
+        greeting: ['Fett. Busy.', 'Leave a name, a location, and a price. In that order.'],
+      },
+      {
+        name: 'Mom',
+        icon: '💗',
+        kind: 'voicemail',
+        voice: 'high',
+        greeting: [
+          'Hi sweetie, it’s Mom! Are you eating? Is that ship clean?',
+          'Call me back. And update your resume, a nice company called.',
+        ],
+      },
+      {
+        name: 'Bounty Guild Recruiting',
+        icon: '📇',
+        kind: 'voicemail',
+        voice: 'human',
+        greeting: [
+          'You’ve reached Bounty Guild recruiting. For open contracts, press one.',
+          'To hire Lihi Ancikovsky, skip the menu: lihia@vt.edu.',
+        ],
+      },
+      {
+        name: 'Han Solo',
+        icon: '🎲',
+        kind: 'voicemail',
+        voice: 'human',
+        greeting: [
+          'Han here. Whatever it is, I didn’t do it.',
+          'And if I did, I had a good reason.',
+        ],
+      },
+      {
+        name: 'Lando Calrissian',
+        icon: '🃏',
+        kind: 'voicemail',
+        voice: 'human',
+        greeting: [
+          'You’ve reached Lando. I’m at the sabacc table, and I’m winning.',
+          'Leave a message. Charmingly.',
+        ],
+      },
+      {
+        name: 'Jabba’s Palace',
+        icon: '🐸',
+        kind: 'voicemail',
+        voice: 'alien',
+        greeting: [
+          'De wanna wanga? The Mighty One is not taking calls.',
+          'Leave your tribute after the tone. Hoo hoo hoo.',
+        ],
+      },
+      {
+        name: 'Astromech Repair Shop',
+        icon: '🔧',
+        kind: 'voicemail',
+        voice: 'droid',
+        greeting: ['[Cheerful beeping]', '[A long, judgmental whistle]'],
+      },
+      {
+        name: 'Grogu',
+        icon: '🟢',
+        kind: 'voicemail',
+        voice: 'high',
+        greeting: ['[Happy gurgling]', '[The unmistakable sound of a frog being eaten]'],
+      },
+      {
+        name: 'VT 4Help',
+        icon: '🦃',
+        kind: 'voicemail',
+        voice: 'human',
+        greeting: [
+          'Thank you for calling 4Help. Your call is important to us.',
+          'Have you tried turning the hyperdrive off and on again?',
+        ],
+      },
     ],
     voicemail:
       'The contact you are trying to reach is unavailable. Please leave a message after the tone.',
@@ -935,7 +1320,7 @@ export const portfolio: Portfolio = {
       blaster: '[Main blaster fires]',
       torpedo: '[Torpedo launches]',
       ring: '[Comm ringing]',
-      voicemail: '[Voicemail tone]',
+      voicemail: '[Beep. Leave your message after the tone]',
       meow: '[Meow]',
       hangUp: '[Holocall disconnected]',
       alarm: '[Alarms blaring]',
@@ -972,6 +1357,43 @@ export const portfolio: Portfolio = {
 
     picture: { caption: 'Me and Sniffles · Outer Rim, last spring' },
 
+    recruiterUi: {
+      kicker: 'Recruiter briefing',
+      metaTitle: 'Recruiter Briefing',
+      tailorTitle: 'Tailor this briefing',
+      tailorHint:
+        'Pick the role you’re hiring for: everything below reorders by relevance, and the link updates so you can forward it to your hiring manager.',
+      allRoles: 'Everything',
+      strongMatch: 'Strong match',
+      goodMatch: 'Relevant',
+      glance: 'At a glance',
+      experience: 'Experience',
+      projects: 'Projects',
+      skills: 'Skills',
+      education: 'Education',
+      leadership: 'Leadership',
+      awards: 'Awards & recognition',
+      lookingFor: 'What I’m looking for',
+      email: 'Email me',
+      copyEmail: 'Copy email',
+      copied: 'Copied',
+      resume: 'Resume (PDF)',
+      saveContact: 'Save contact',
+      schedule: 'Book a call',
+      copySummary: 'Copy candidate summary',
+      summaryCopied: 'Summary copied: paste it into your ATS or notes',
+      print: 'Print / save as PDF',
+      share: 'Share this briefing',
+      shareCopied: 'Link copied',
+      cockpit: 'See the interactive portfolio →',
+      years: 'yrs',
+      updated: 'Updated',
+      entry: 'Recruiter? Skip to the 60-second briefing →',
+      linkedin: 'LinkedIn',
+      github: 'GitHub',
+      gpa: 'GPA',
+      minor: 'minor in',
+    },
     plain: {
       kicker: 'Bounty Guild · Intelligence File · Declassified',
       skipToContent: 'Skip to content',
@@ -993,3 +1415,11 @@ export const portfolio: Portfolio = {
       'Unofficial fan project. Not affiliated with or endorsed by Lucasfilm Ltd. or The Walt Disney Company. Star Wars and related terms are trademarks of their respective owners. All artwork, models, and audio on this site are original.',
   },
 };
+
+// Fold in public GitHub repos (src/content/github.data.ts; `npm run sync:github`):
+// links for posters that point at a repo, and basic posters for new repos.
+portfolio.propaganda = withGitHub(portfolio.propaganda, {
+  skills: portfolio.associates.map((a) => a.skill),
+  maxPosters: 12,
+  text: portfolio.site.githubPosters,
+});

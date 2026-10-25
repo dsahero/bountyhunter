@@ -23,4 +23,5 @@ export interface Game {
 /** Deterministic-enough randomness that tests can seed. */
 export type Rand = () => number;
 
-export const pick = <T>(rand: Rand, list: readonly T[]): T => list[Math.floor(rand() * list.length)]!;
+export const pick = <T>(rand: Rand, list: readonly T[]): T =>
+  list[Math.floor(rand() * list.length)]!;

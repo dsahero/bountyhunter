@@ -14,12 +14,12 @@ import { z } from 'zod';
 const url = z.string().url();
 const nonEmpty = z.string().min(1);
 
-export const linkSchema = z.object({
+const linkSchema = z.object({
   label: nonEmpty,
   href: z.union([url, z.string().startsWith('/'), z.string().startsWith('mailto:')]),
 });
 
-export const identitySchema = z.object({
+const identitySchema = z.object({
   name: nonEmpty,
   alias: nonEmpty,
   tagline: nonEmpty,
@@ -35,7 +35,7 @@ export const identitySchema = z.object({
   lastSeen: nonEmpty,
 });
 
-export const courseSchema = z.object({
+const courseSchema = z.object({
   code: nonEmpty,
   title: nonEmpty,
   /** In-universe moon name orbiting the university planet. */
@@ -43,7 +43,7 @@ export const courseSchema = z.object({
   blurb: nonEmpty,
 });
 
-export const planetSchema = z.object({
+const planetSchema = z.object({
   name: nonEmpty,
   /** The real-world place this planet stands in for. */
   realLocation: nonEmpty,
@@ -56,7 +56,7 @@ export const planetSchema = z.object({
   lore: nonEmpty,
 });
 
-export const educationSchema = z.object({
+const educationSchema = z.object({
   school: nonEmpty,
   degree: nonEmpty,
   specialization: nonEmpty,
@@ -69,7 +69,7 @@ export const educationSchema = z.object({
   courses: z.array(courseSchema).min(1),
 });
 
-export const chargeSchema = z.object({
+const chargeSchema = z.object({
   id: nonEmpty,
   kind: z.enum(['internship', 'leadership']),
   org: nonEmpty,
@@ -88,9 +88,9 @@ export const chargeSchema = z.object({
   severity: z.number().int().min(1).max(5),
 });
 
-export const archetypeSchema = z.enum(['trooper', 'jedi', 'droid', 'smuggler', 'merc', 'alien']);
+const archetypeSchema = z.enum(['trooper', 'jedi', 'droid', 'smuggler', 'merc', 'alien']);
 
-export const associateSchema = z.object({
+const associateSchema = z.object({
   /** The real skill, e.g. "Python". */
   skill: nonEmpty,
   callsign: nonEmpty,
@@ -107,7 +107,7 @@ export const associateSchema = z.object({
   accent: z.string().regex(/^#[0-9a-fA-F]{6}$/),
 });
 
-export const propagandaSchema = z.object({
+const propagandaSchema = z.object({
   id: nonEmpty,
   title: nonEmpty,
   /** Poster slogan, all-caps propaganda energy. */
@@ -118,14 +118,35 @@ export const propagandaSchema = z.object({
   stack: z.array(nonEmpty).min(1),
   role: nonEmpty,
   links: z.array(linkSchema),
-  media: z.array(z.object({ src: z.string().startsWith('/'), alt: nonEmpty })),
+  /**
+   * Screenshots or short clips (.mp4/.webm play muted on a loop, on the
+   * poster and in the transmission). `still` is an optional preview image.
+   */
+  media: z.array(
+    z.object({ src: z.string().startsWith('/'), alt: nonEmpty, still: z.string().optional() }),
+  ),
   bountyValue: z.number().int().positive(),
-  posterStyle: z.enum(['starburst', 'diagonal', 'silhouette', 'grid']),
+  /** Poster artwork layout. */
+  posterStyle: z.enum([
+    'starburst',
+    'diagonal',
+    'silhouette',
+    'grid',
+    'target',
+    'ship',
+    'halftone',
+    'planet',
+    'emblem',
+  ]),
+  /** Poster inks; leave out to pick one from the project id. */
+  posterPalette: z
+    .enum(['rust', 'navy', 'parchment', 'neon', 'jungle', 'violet', 'crimson', 'sand'])
+    .optional(),
   /** Hidden until unlocked by an easter egg. */
   classified: z.boolean(),
 });
 
-export const contactSchema = z.object({
+const contactSchema = z.object({
   email: z.string().email(),
   github: url,
   linkedin: url,
@@ -152,7 +173,7 @@ export type SectionKey = (typeof SECTION_KEYS)[number];
 
 const propText = z.object({ label: nonEmpty, blurb: nonEmpty });
 
-export const siteSchema = z.object({
+const siteSchema = z.object({
   gate: z.object({
     kicker: nonEmpty,
     title: nonEmpty,
@@ -192,6 +213,9 @@ export const siteSchema = z.object({
     motion: nonEmpty,
     motionFull: nonEmpty,
     motionReduced: nonEmpty,
+    captions: nonEmpty,
+    settings: nonEmpty,
+    recruiter: nonEmpty,
     replay: nonEmpty,
     plainDossier: nonEmpty,
     skipIntro: nonEmpty,
@@ -212,6 +236,15 @@ export const siteSchema = z.object({
     fireTorpedo: nonEmpty,
     /** Screen-reader list of the clickable things in the cockpit. */
     objects: nonEmpty,
+    /** The menu's extra apps (page 2) and its page flipper. */
+    achievements: nonEmpty,
+    guestbook: nonEmpty,
+    guestbookSub: nonEmpty,
+    prevPage: nonEmpty,
+    nextPage: nonEmpty,
+    page: nonEmpty,
+    share: nonEmpty,
+    shared: nonEmpty,
     footer: nonEmpty,
   }),
   panel: z.object({ back: nonEmpty, console: nonEmpty }),
@@ -274,9 +307,23 @@ export const siteSchema = z.object({
   holograms: z.object({ wanted: nonEmpty, currency: nonEmpty }),
   droidHints: lines,
   helmet: z.object({ label: nonEmpty, blurb: nonEmpty }),
+  /**
+   * The Call button's contacts. `cat` starts a holocall; `voicemail` rings,
+   * then plays the contact's greeting (lines shown as subtitles, spoken in a
+   * synthesized `voice`), then the tone.
+   */
   contacts: z
-    .array(z.object({ name: nonEmpty, icon: nonEmpty, kind: z.enum(['voicemail', 'cat']) }))
+    .array(
+      z.object({
+        name: nonEmpty,
+        icon: nonEmpty,
+        kind: z.enum(['voicemail', 'cat']),
+        voice: z.enum(['deep', 'human', 'high', 'droid', 'alien']).optional(),
+        greeting: z.array(nonEmpty).optional(),
+      }),
+    )
     .min(1),
+  /** Greeting for a voicemail contact without its own. */
   voicemail: nonEmpty,
   attack: z.object({
     guitarTitle: nonEmpty,
@@ -324,6 +371,73 @@ export const siteSchema = z.object({
     alarm: z.string(),
   }),
   picture: z.object({ caption: nonEmpty }),
+  /**
+   * The site's public address (e.g. https://lihi.dev), used for link
+   * previews; leave empty until the domain is final.
+   */
+  siteUrl: z.string(),
+  /** Little goals for exploring the cockpit (the Achievements board). */
+  achievements: z
+    .array(z.object({ id: nonEmpty, title: nonEmpty, description: nonEmpty, icon: nonEmpty }))
+    .min(1),
+  achievementsText: z.object({
+    intro: nonEmpty,
+    toast: nonEmpty,
+    progress: nonEmpty,
+    locked: nonEmpty,
+    reset: nonEmpty,
+  }),
+  /** The guestbook ("the hunter's log"): wording for the form and messages. */
+  guestbook: z.object({
+    intro: nonEmpty,
+    name: nonEmpty,
+    message: nonEmpty,
+    sign: nonEmpty,
+    signing: nonEmpty,
+    thanks: nonEmpty,
+    empty: nonEmpty,
+    offline: nonEmpty,
+    tooFast: nonEmpty,
+    invalid: nonEmpty,
+  }),
+  /** Screen-reader labels (never shown, but read aloud). */
+  a11y: z.object({
+    timeline: nonEmpty,
+    introControls: nonEmpty,
+    openingCrawl: nonEmpty,
+    contactLinks: nonEmpty,
+    sections: nonEmpty,
+    typeCodes: nonEmpty,
+    cargoControls: nonEmpty,
+  }),
+  /** Text drawn by the defense-terminal games and their touch controls. */
+  terminalUi: z.object({
+    intruder: nonEmpty,
+    hold: nonEmpty,
+    next: nonEmpty,
+    cargoHelp: z.array(nonEmpty),
+    typePlaceholder: nonEmpty,
+    touch: z.object({
+      hold: nonEmpty,
+      slam: nonEmpty,
+      holdAria: nonEmpty,
+      leftAria: nonEmpty,
+      rotateAria: nonEmpty,
+      rightAria: nonEmpty,
+      dropAria: nonEmpty,
+      slamAria: nonEmpty,
+    }),
+  }),
+  /** Wording for posters made automatically from GitHub repos (src/content/github.ts). */
+  githubPosters: z.object({
+    slogans: z.array(nonEmpty).min(1),
+    live: nonEmpty,
+    source: nonEmpty,
+    /** {DATE} becomes the month of the last push. */
+    role: nonEmpty,
+  }),
+  /** Rubber stamps that land on some posters. */
+  posterStamps: z.array(nonEmpty),
   /** Said when you press one of the cockpit's many unlabeled square buttons. */
   buttonQuips: z.array(nonEmpty).min(1),
   /** Flavor text for each tchotchke (click one to read it). */
@@ -335,6 +449,43 @@ export const siteSchema = z.object({
     plant: propText,
     bobble: propText,
     picture: propText,
+  }),
+  /** Labels for the recruiter briefing page. */
+  recruiterUi: z.object({
+    kicker: nonEmpty,
+    metaTitle: nonEmpty,
+    tailorTitle: nonEmpty,
+    tailorHint: nonEmpty,
+    allRoles: nonEmpty,
+    strongMatch: nonEmpty,
+    goodMatch: nonEmpty,
+    glance: nonEmpty,
+    experience: nonEmpty,
+    projects: nonEmpty,
+    skills: nonEmpty,
+    education: nonEmpty,
+    leadership: nonEmpty,
+    awards: nonEmpty,
+    lookingFor: nonEmpty,
+    email: nonEmpty,
+    copyEmail: nonEmpty,
+    copied: nonEmpty,
+    resume: nonEmpty,
+    saveContact: nonEmpty,
+    schedule: nonEmpty,
+    copySummary: nonEmpty,
+    summaryCopied: nonEmpty,
+    print: nonEmpty,
+    share: nonEmpty,
+    shareCopied: nonEmpty,
+    cockpit: nonEmpty,
+    years: nonEmpty,
+    updated: nonEmpty,
+    entry: nonEmpty,
+    linkedin: nonEmpty,
+    github: nonEmpty,
+    gpa: nonEmpty,
+    minor: nonEmpty,
   }),
   plain: z.object({
     kicker: nonEmpty,
@@ -350,23 +501,60 @@ export const siteSchema = z.object({
   disclaimer: nonEmpty,
 });
 
-export type Site = z.infer<typeof siteSchema>;
+/** The recruiter briefing (/recruiter): the facts a recruiter scans for first. */
+const recruiterSchema = z.object({
+  headline: nonEmpty,
+  /** What you're looking for and when (shown as a badge). */
+  status: nonEmpty,
+  availability: nonEmpty,
+  location: nonEmpty,
+  /** Work authorization / clearance line (only what you're comfortable sharing). */
+  authorization: nonEmpty,
+  /** Two or three sentences: who you are and what you bring. */
+  pitch: z.array(nonEmpty).min(1),
+  /** Headline numbers, each backed by a line on the resume. */
+  highlights: z.array(z.object({ value: nonEmpty, label: nonEmpty, detail: nonEmpty })).min(1),
+  /**
+   * The roles you fit. Picking one tailors the page: experience, projects,
+   * and skills are ranked by how much they use these skills / mention these
+   * keywords.
+   */
+  focusAreas: z
+    .array(
+      z.object({
+        id: nonEmpty,
+        label: nonEmpty,
+        skills: z.array(nonEmpty),
+        keywords: z.array(nonEmpty),
+      }),
+    )
+    .min(1),
+  /** Awards and recognition, one line each. */
+  awards: z.array(nonEmpty),
+  /** "What I'm looking for": a few short lines. */
+  lookingFor: z.array(nonEmpty),
+  /** Optional booking link (Calendly etc.); empty hides the button. */
+  scheduleUrl: z.string(),
+});
 
 export const portfolioSchema = z.object({
   identity: identitySchema,
   education: educationSchema,
   charges: z.array(chargeSchema).min(1),
   associates: z.array(associateSchema).min(1),
-  /** At most 10: one per poster slot in the cargo hold (hub/layout.ts POSTER_SLOTS). */
-  propaganda: z.array(propagandaSchema).min(1).max(10, 'Too many posters: add slots to POSTER_SLOTS in src/hub/layout.ts'),
+  /** At most 12: one per poster slot (hub/layout.ts POSTER_SLOTS). */
+  propaganda: z
+    .array(propagandaSchema)
+    .min(1)
+    .max(12, 'Too many posters: add slots to POSTER_SLOTS in src/hub/layout.ts'),
   contact: contactSchema,
   resume: z.object({ pdf: z.string().startsWith('/'), updated: nonEmpty }),
+  recruiter: recruiterSchema,
   /** All non-personal site copy (crawl, labels, captions, ...). */
   site: siteSchema,
 });
 
 export type Portfolio = z.infer<typeof portfolioSchema>;
-export type Identity = z.infer<typeof identitySchema>;
 export type Education = z.infer<typeof educationSchema>;
 export type Charge = z.infer<typeof chargeSchema>;
 export type Associate = z.infer<typeof associateSchema>;

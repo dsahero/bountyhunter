@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useSettings } from '../state/settings';
 import { useExperience } from '../state/experience';
 import { LoadingBar } from './LoadingBar';
@@ -31,6 +32,9 @@ export function StartGate() {
         {g.title}
       </h1>
       <p className="gate__sub">{fillTokens(g.subtitle)}</p>
+      <Link className="gate__recruiter" to="/recruiter">
+        {lore.recruiterUi.entry}
+      </Link>
       <div className="gate__actions">
         <button className="btn" onClick={() => enter(true)} autoFocus>
           {g.enterWithSound}

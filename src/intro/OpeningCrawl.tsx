@@ -45,7 +45,7 @@ export function OpeningCrawl() {
   );
 
   return (
-    <section className="crawl" aria-label="Opening crawl">
+    <section className="crawl" aria-label={lore.a11y.openingCrawl}>
       {reduced ? (
         <div className="crawl__static">{body}</div>
       ) : (

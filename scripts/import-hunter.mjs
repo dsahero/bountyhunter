@@ -124,7 +124,12 @@ const median = (k) => {
   return v.length ? v[Math.floor(v.length / 2)] : 0;
 };
 const offset = new THREE.Vector3(median('x'), median('y'), median('z'));
-console.log(`Blender offset undone: ${offset.toArray().map((v) => v.toFixed(3)).join(', ')}`);
+console.log(
+  `Blender offset undone: ${offset
+    .toArray()
+    .map((v) => v.toFixed(3))
+    .join(', ')}`,
+);
 
 const out = new THREE.Group();
 const groups = new Map();
@@ -163,4 +168,6 @@ if (skipped.length) console.warn(`No rig pivot for (skipped): ${skipped.join(', 
 const result = await new GLTFExporter().parseAsync(out, { binary: true });
 await mkdir('public/models', { recursive: true });
 await writeFile(OUT, Buffer.from(result));
-console.log(`Wrote ${OUT}: ${[...groups.values()].reduce((n, g) => n + g.children.length, 0)} pieces on ${groups.size} pivots`);
+console.log(
+  `Wrote ${OUT}: ${[...groups.values()].reduce((n, g) => n + g.children.length, 0)} pieces on ${groups.size} pivots`,
+);

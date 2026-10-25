@@ -6,7 +6,7 @@ My background is told as in-universe lore:
 
 | Real          | In-universe                                    |
 | ------------- | ---------------------------------------------- |
-| Virginia Tech | Homeworld planet; courses are moons  |
+| Virginia Tech | Homeworld planet; courses are moons            |
 | Internships   | Charges on the warrant, one planet per city    |
 | Leadership    | "Inciting organized rebellion"                 |
 | Projects      | Rebel propaganda                               |
@@ -21,14 +21,44 @@ npm install
 npm run dev       # http://localhost:5173
 ```
 
-| Command           | What it does                                        |
-| ----------------- | --------------------------------------------------- |
-| `npm test`        | Unit tests (Vitest)                                 |
-| `npm run e2e`     | Browser tests, desktop + mobile (Playwright)        |
-| `npm run build`   | Production build, including the prerendered dossier |
-| `npm run preview` | Serve the production build                          |
+| Command                                   | What it does                                                   |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| `npm test`                                | Unit tests (Vitest)                                            |
+| `npm run e2e`                             | Browser tests, desktop + mobile (Playwright)                   |
+| `npm run build`                           | Production build, including the prerendered dossier            |
+| `npm run preview`                         | Serve the production build                                     |
+| `npm run sync:github`                     | Pull your public repos (new ones become posters)               |
+| `npm run capture:media -- id=url`         | Record a looping clip + still of a live project for its poster |
+| `npm run og:image`                        | Re-render the link-preview image from your content             |
+| `npm run export:hunter` / `import:hunter` | Round-trip the hunter model through Blender                    |
 
 Add `?tier=none` to the URL to see the no-WebGL fallback, or `?shot=18` to freeze the intro at 18 seconds.
+
+## Recruiter briefing
+
+[`/recruiter`](src/recruiter/RecruiterBriefing.tsx) is a fast, no-intro page built for a 60-second scan, prerendered like `/dossier` (works without JavaScript, prints cleanly):
+
+- Status, availability, location, and clearance up top, with one-tap **Email**, **Resume**, **Copy email**, **Save contact** (vCard), **Book a call** (if `recruiter.scheduleUrl` is set), LinkedIn, and GitHub.
+- **At a glance:** headline numbers, each backed by a resume line.
+- **Tailor this briefing:** pick a role (Full-stack, ML / AI, Data, Systems & DevOps). Experience, projects, and skills reorder by relevance with matches highlighted, and the link updates (`/recruiter?focus=ml`) so a recruiter can forward the tailored page.
+- **Copy candidate summary:** a plain-text summary for an ATS or notes, tailored to the chosen role.
+
+Reach it from the start screen ("Recruiter? Skip to the briefing"), the HUD, or by adding `?recruiter` to any link (handy on a resume). Its wording and numbers live in `recruiter` in `portfolio.ts`.
+
+## Share links (no intro)
+
+`/` plays the full intro. Every view also has its own address, which opens straight to it:
+
+| Link                                                         | Opens                               |
+| ------------------------------------------------------------ | ----------------------------------- |
+| `/cockpit`                                                   | The main computer                   |
+| `/projects/dietre`                                           | A project's poster and transmission |
+| `/experience/nswc`                                           | A charge on the star map            |
+| `/skills/python`                                             | An associate                        |
+| `/about`, `/education`, `/leadership`, `/resume`, `/contact` | That station                        |
+| `/achievements`, `/guestbook`                                | The console apps                    |
+
+The address bar follows what's on screen, and every panel has a **Share link** button (the phone share sheet on mobile).
 
 ## Controls
 
@@ -36,13 +66,18 @@ Drag to look around; scroll, pinch, or `+`/`-` to zoom. Arrow keys and Enter dri
 
 ## Edit the content
 
-Everything on the site, including the crawl, labels, captions, contacts, and minigame text, lives in [`src/content/portfolio.ts`](src/content/portfolio.ts) (site copy is under `site`). Add or remove experiences, projects (up to 10 poster slots), and skills freely; the layouts adapt. Optional music files go in `site.audio` (empty uses the built-in synth). The resume PDF is [`public/resume.pdf`](public/resume.pdf). Run `npm test` after editing: it checks the content against the schema.
+Everything on the site, including the crawl, labels, captions, contacts, and minigame text, lives in [`src/content/portfolio.ts`](src/content/portfolio.ts) (site copy is under `site`). Add or remove experiences, projects (up to 12 poster slots), and skills freely; the layouts adapt. Each poster mixes a layout (`posterStyle`), a palette (`posterPalette`), a border, and a stamp; give a project `media` (an image or a short `.mp4`) and it plays on the poster and in its panel. Music files go in `site.audio`. `site.siteUrl` is your deployed address (for link previews). The resume PDF is [`public/resume.pdf`](public/resume.pdf). Run `npm test` after editing: it checks the content against the schema.
 
 ## Edit the hunter in Blender
 
 `npm run export:hunter` writes `exports/hunter.glb` (File > Import > glTF 2.0 in Blender). Every piece is a separate object named by body part, material, and shape (e.g. `Head_hair_capsule_1`), grouped under the rig pivots (`Spine`, `Neck`, `Head`, `UpperArm_L`, ...). The helmet is exported beside the hunter.
 
 To bring your edits back: export from Blender as `exports/hunter.obj` (Y up, with materials) and run `npm run import:hunter`. It re-attaches every piece to its rig pivot by name and writes `public/models/hunter.glb`, which the site uses in place of the procedural hunter, so the animation still drives it. New pieces just need a pivot prefix (e.g. `Head_bangs`).
+
+## Guestbook and analytics (one-time setup on Vercel)
+
+- **Guestbook** ("Hunter's log", page 2 of the menu): an Edge Function at [`api/guestbook.ts`](api/guestbook.ts) stores entries in Upstash Redis. In Vercel, add the **Upstash for Redis** integration (free tier) to the project; it sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Without it the log shows "offline". Entries are length-limited, link-free, filtered for slurs, rate-limited per visitor, and bot-trapped; delete any entry in the Upstash console (key `guestbook`). Locally, `npm run dev` and `npm run preview` use an in-memory stand-in.
+- **Analytics:** cookie-free Vercel Web Analytics (page views plus a few events: stations opened, achievements, shares, deep links). Enable it under Project > Analytics. Nothing is sent from local builds.
 
 ## How it works
 
@@ -72,7 +107,7 @@ To bring your edits back: export from Blender as `exports/hunter.obj` (Y up, wit
 - [x] M3: Dossier stations (star map, charges, associates, propaganda, comms)
 - [x] M4: Post-processing, audio, ambient life
 - [x] M5: Guitar attack sequence, terminal minigames, comms, weapons
-- [ ] M6: Mobile, accessibility, and performance pass; deploy
+- [x] M6: Share links, mobile touch controls, achievements, guestbook, analytics, link previews
 
 ---
 

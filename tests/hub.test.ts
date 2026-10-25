@@ -1,5 +1,6 @@
 import { ANCHORS, EYE, lookAtPoint } from '../src/hub/layout';
-import { consoleLook, useHub } from '../src/state/hub';
+import { useHub } from '../src/state/hub';
+import { consoleLook } from '../src/state/hubView';
 import { useLook } from '../src/state/look';
 
 describe('station look math', () => {

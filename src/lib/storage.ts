@@ -3,7 +3,7 @@
  * private windows, sandboxed iframes, or when the user blocks site data.
  * The site must keep working in all of those cases, just without memory.
  */
-export const KEY_PREFIX = 'bh.';
+const KEY_PREFIX = 'bh.';
 
 export function readJSON<T>(key: string, fallback: T): T {
   try {

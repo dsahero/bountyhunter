@@ -13,6 +13,7 @@
  */
 import { COLOR, FONT, type Region } from '../../three/ui/canvasKit';
 import type { Game, Rand } from './game';
+import { portfolio } from '../../content/portfolio';
 
 export const CARGO_ROWS_TO_CLEAR = 3;
 export const BOARD = { cols: 10, rows: 14 };
@@ -342,12 +343,12 @@ export class Cargo implements Game {
       for (const [cx, cy] of SHAPES[shape]!)
         cell(px + 4, y + 26, cx, cy, mini, shape, dim ? 0.35 : 1);
     };
-    box('HOLD [C]', this.held, bx - mini * 4 - 30, !this.canHold);
-    box('NEXT', this.next, bx + bw + 22, false);
+    const ui = portfolio.site.terminalUi;
+    box(ui.hold, this.held, bx - mini * 4 - 30, !this.canHold);
+    box(ui.next, this.next, bx + bw + 22, false);
     ctx.font = `12px ${FONT.mono}`;
     ctx.fillStyle = COLOR.muted;
-    const help = ['←/→ MOVE', '↑ ROTATE', '↓ DROP', 'SPACE SLAM'];
-    help.forEach((t, i) => ctx.fillText(t, x, y + mini * 3 + 52 + i * 17));
+    ui.cargoHelp.forEach((t, i) => ctx.fillText(t, x, y + mini * 3 + 52 + i * 17));
     return [];
   }
 }

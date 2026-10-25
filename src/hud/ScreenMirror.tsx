@@ -8,6 +8,7 @@
  */
 import { useEffect } from 'react';
 import { activateConsoleItem, consoleItems } from '../hub/consoleModel';
+import { useAchievements } from '../state/achievements';
 import { useConsoleUi } from '../state/consoleUi';
 import { useHub } from '../state/hub';
 import { lore } from '../content/lore';
@@ -25,7 +26,9 @@ export function ConsoleMirror() {
   const call = useHub((s) => s.call);
   const station = useHub((s) => s.station);
   const holosOff = useHub((s) => s.holosOff);
-  const items = consoleItems(mode, !!call, holosOff);
+  const page = useConsoleUi((s) => s.page);
+  useAchievements((s) => s.unlocked.length); // re-render for the progress label
+  const items = consoleItems(mode, !!call, holosOff, page);
   const set = useConsoleUi.getState().set;
 
   // Restore keyboard focus to the highlighted item whenever the page changes.
@@ -33,7 +36,7 @@ export function ConsoleMirror() {
     if (station) return;
     const target = focus ?? items.find((i) => i.kind === 'station')?.id;
     if (target) document.getElementById(`console-${target}`)?.focus({ preventScroll: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on a page change, not every focus move
   }, [mode, station]);
 
   return (

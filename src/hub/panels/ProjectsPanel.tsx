@@ -1,8 +1,10 @@
 import { portfolio } from '../../content/portfolio';
 import { lore } from '../../content/lore';
-import { posterOrder, useHub } from '../../state/hub';
+import { useHub } from '../../state/hub';
+import { posterOrder } from '../../state/hubView';
 import { useUnlocks } from '../../state/unlocks';
 import type { Propaganda } from '../../content/schema';
+import { isVideo } from '../../lib/media';
 
 function Transmission({ p, locked }: { p: Propaganda; locked: boolean }) {
   const l = lore.labels;
@@ -29,6 +31,26 @@ function Transmission({ p, locked }: { p: Propaganda; locked: boolean }) {
       <h3 className="charge__title">{p.title}</h3>
       <p className="transmission__slogan">“{p.slogan}”</p>
       <p className="panel__lead">{p.oneLiner}</p>
+      {p.media.length > 0 && (
+        <div className="transmission__media">
+          {p.media.map((m) =>
+            isVideo(m.src) ? (
+              <video
+                key={m.src}
+                src={m.src}
+                poster={m.still}
+                aria-label={m.alt}
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <img key={m.src} src={m.src} alt={m.alt} loading="lazy" />
+            ),
+          )}
+        </div>
+      )}
       {p.description.map((d) => (
         <p key={d}>{d}</p>
       ))}

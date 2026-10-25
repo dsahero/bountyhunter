@@ -23,7 +23,7 @@ import * as THREE from 'three';
 import { aimBone, solveElbow } from './ik';
 import { useModeledParts } from './hunterParts';
 
-export interface HunterPose {
+interface HunterPose {
   sit: number;
   lean: number;
   nod: number;
@@ -43,7 +43,7 @@ export interface HunterHandle {
   hair: { visible: boolean };
 }
 
-export const SIT_DROP = 0.44;
+const SIT_DROP = 0.44;
 const HIP_Y = 0.92;
 const SHOULDER_Y = 0.5; // above the spine pivot
 const NECK_Y = 0.6; // above the spine pivot
@@ -75,24 +75,30 @@ function useMaterials() {
 
 type Mats = ReturnType<typeof useMaterials>;
 
+/** Which side a limb is on (the hunter's left is -X). Names the rig pivots. */
+type Side = 'L' | 'R';
+const sideOf = (s: number): Side => (s < 0 ? 'L' : 'R');
+
 function Leg({
   m,
+  side,
   hip,
   knee,
 }: {
   m: Mats;
+  side: Side;
   hip: React.RefObject<THREE.Group>;
   knee: React.RefObject<THREE.Group>;
 }) {
   return (
-    <group ref={hip}>
+    <group ref={hip} name={`Hip_${side}`}>
       <mesh position={[0, -0.21, 0]} material={m.suit}>
         <capsuleGeometry args={[0.08, 0.3, 4, 10]} />
       </mesh>
       <mesh position={[0, -0.2, -0.07]} rotation-x={0.05} material={m.steel}>
         <boxGeometry args={[0.13, 0.24, 0.035]} />
       </mesh>
-      <group ref={knee} position={[0, -0.43, 0]}>
+      <group ref={knee} name={`Knee_${side}`} position={[0, -0.43, 0]}>
         <mesh position={[0, 0, -0.06]} material={m.steel}>
           <boxGeometry args={[0.11, 0.08, 0.05]} />
         </mesh>
@@ -113,22 +119,24 @@ function Leg({
 /** Upper arm (pivot at the shoulder) with the forearm (pivot at the elbow) and hand. */
 function Arm({
   m,
+  side,
   upper,
   lower,
 }: {
   m: Mats;
+  side: Side;
   upper: React.RefObject<THREE.Group>;
   lower: React.RefObject<THREE.Group>;
 }) {
   return (
-    <group ref={upper}>
+    <group ref={upper} name={`UpperArm_${side}`}>
       <mesh position={[0, -UPPER / 2, 0]} material={m.suit}>
         <capsuleGeometry args={[0.056, UPPER - 0.08, 4, 8]} />
       </mesh>
       <mesh position={[0, -UPPER * 0.35, 0]} material={m.steel}>
         <cylinderGeometry args={[0.064, 0.06, 0.1, 10]} />
       </mesh>
-      <group ref={lower} position={[0, -UPPER, 0]}>
+      <group ref={lower} name={`Forearm_${side}`} position={[0, -UPPER, 0]}>
         <mesh position={[0, -LOWER * 0.45, 0]} material={m.suit}>
           <capsuleGeometry args={[0.05, LOWER - 0.12, 4, 8]} />
         </mesh>
@@ -139,7 +147,7 @@ function Arm({
           <cylinderGeometry args={[0.058, 0.058, 0.018, 10]} />
         </mesh>
         {/* Hand: palm, four fingers, thumb */}
-        <group position={[0, -LOWER, 0]}>
+        <group name={`Hand_${side}`} position={[0, -LOWER, 0]}>
           <mesh position={[0, -0.03, 0]} material={m.skin}>
             <boxGeometry args={[0.07, 0.07, 0.03]} />
           </mesh>
@@ -160,7 +168,7 @@ function Arm({
 /** A face, with real proportions: eyes, brows, nose, lips, ears, long hair. Faces -Z. */
 function Head({ m }: { m: Mats }) {
   return (
-    <group position={[0, 0.12, 0]}>
+    <group name="Head" position={[0, 0.12, 0]}>
       <mesh scale={[0.9, 1.1, 1]} material={m.skin}>
         <sphereGeometry args={[0.105, 32, 24]} />
       </mesh>
@@ -194,7 +202,7 @@ function Head({ m }: { m: Mats }) {
       ))}
       {/* Eyes: white, iris; brows */}
       {[-1, 1].map((s) => (
-        <group key={s} position={[0.036 * s, 0.012, -0.09]}>
+        <group key={s} name={`Eye_${sideOf(s)}`} position={[0.036 * s, 0.012, -0.09]}>
           <mesh material={m.eyeWhite}>
             <sphereGeometry args={[0.014, 14, 10]} />
           </mesh>
@@ -354,13 +362,13 @@ export const Hunter = forwardRef<HunterHandle, JSX.IntrinsicElements['group']>(
     });
 
     return (
-      <group ref={root} {...props}>
-        <group ref={body}>
-          <group position={[-0.11, HIP_Y, 0]}>
-            <Leg m={m} hip={hipL} knee={kneeL} />
+      <group ref={root} name="Hunter" {...props}>
+        <group ref={body} name="Body">
+          <group name="Leg_L" position={[-0.11, HIP_Y, 0]}>
+            <Leg m={m} side="L" hip={hipL} knee={kneeL} />
           </group>
-          <group position={[0.11, HIP_Y, 0]}>
-            <Leg m={m} hip={hipR} knee={kneeR} />
+          <group name="Leg_R" position={[0.11, HIP_Y, 0]}>
+            <Leg m={m} side="R" hip={hipR} knee={kneeR} />
           </group>
           {/* Belt, buckle, pouches, hip plates */}
           <mesh position={[0, 0.96, 0]} material={m.leather}>
@@ -381,7 +389,7 @@ export const Hunter = forwardRef<HunterHandle, JSX.IntrinsicElements['group']>(
           ))}
 
           {/* Spine: everything from the waist up leans together */}
-          <group ref={spine} position={[0, 0.98, 0]}>
+          <group ref={spine} name="Spine" position={[0, 0.98, 0]}>
             <mesh position={[0, 0.22, 0]} scale={[1.15, 1, 0.8]} material={m.suit}>
               <capsuleGeometry args={[0.17, 0.28, 4, 12]} />
             </mesh>
@@ -405,7 +413,7 @@ export const Hunter = forwardRef<HunterHandle, JSX.IntrinsicElements['group']>(
               <boxGeometry args={[0.24, 0.28, 0.1]} />
             </mesh>
             {[-1, 1].map((s) => (
-              <group key={s} position={[0.09 * s, 0.29, 0.25]}>
+              <group key={s} name={`Jetpack_${sideOf(s)}`} position={[0.09 * s, 0.29, 0.25]}>
                 <mesh material={m.steel}>
                   <cylinderGeometry args={[0.042, 0.042, 0.26, 12]} />
                 </mesh>
@@ -426,17 +434,17 @@ export const Hunter = forwardRef<HunterHandle, JSX.IntrinsicElements['group']>(
                 <sphereGeometry args={[1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
               </mesh>
             ))}
-            <group position={[-0.24, SHOULDER_Y - 0.06, 0]}>
-              <Arm m={m} upper={upperL} lower={lowerL} />
+            <group name="Shoulder_L" position={[-0.24, SHOULDER_Y - 0.06, 0]}>
+              <Arm m={m} side="L" upper={upperL} lower={lowerL} />
             </group>
-            <group position={[0.24, SHOULDER_Y - 0.06, 0]}>
-              <Arm m={m} upper={upperR} lower={lowerR} />
+            <group name="Shoulder_R" position={[0.24, SHOULDER_Y - 0.06, 0]}>
+              <Arm m={m} side="R" upper={upperR} lower={lowerR} />
             </group>
             {/* Neck and head */}
             <mesh position={[0, NECK_Y - 0.06, 0]} material={m.skin}>
               <cylinderGeometry args={[0.045, 0.05, 0.08, 12]} />
             </mesh>
-            <group ref={head} position={[0, NECK_Y, 0]}>
+            <group ref={head} name="Neck" position={[0, NECK_Y, 0]}>
               <Head m={m} />
             </group>
           </group>

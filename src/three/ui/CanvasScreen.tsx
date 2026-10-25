@@ -79,7 +79,7 @@ export function CanvasScreen({
   useEffect(() => {
     paint(clock.current);
     void document.fonts?.ready.then(() => paint(clock.current));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` stands in for whatever `draw` reads
   }, [version, hover, focusId, width, height]);
 
   useFrame((_, dt) => {
