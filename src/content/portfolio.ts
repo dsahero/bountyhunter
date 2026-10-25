@@ -29,8 +29,8 @@ export const portfolio: Portfolio = {
     scanModel: null, // e.g. '/models/me.glb' (a 3D scan, shown as the jittery blue wanted hologram)
     bio: [
       'Computer Science senior at Virginia Tech specializing in Data-Centric Computing, with a minor in Mathematics.',
-      'I build full-stack software and AI systems: mission-planning tools for the Navy, multi-agent reinforcement learning for missile defense, and statistical analysis that tripled a production yield.',
-      'I also lead HackViolet and Girls Who Code at Virginia Tech. Off-duty: guitar, hackathons, and far too many Star Wars rewatches.',
+      'I build full-stack software and AI systems: as an intern, I contributed to software for the Navy, multi-agent reinforcement learning research in missile defense, and statistical analysis that tripled production yield at a biotech company.',
+      'I also currently lead HackViolet and Girls Who Code at Virginia Tech. Off-duty: guitar, hackathons, and far too many Star Wars rewatches.',
     ],
     traits: [
       { label: 'Homeworld', value: 'Virginia Tech, Blacksburg' },
